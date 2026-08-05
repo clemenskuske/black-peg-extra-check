@@ -7,7 +7,7 @@ import BlackPegExtraCheck.DecisionTree
 import Mathlib.Data.Fintype.CardEmbedding
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Omega
+import Lean.Elab.Tactic.Omega
 
 /-!
 # Ten fields and eleven colors
