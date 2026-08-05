@@ -5,8 +5,9 @@ This repository studies the adaptive game in
 each round asks a permutation query, receives its number of exact matches, and
 then asks one truthful coordinate-equality question.
 
-The verified result is the information-theoretic lower bound. Any deterministic
-strategy that solves every secret in at most `T` rounds must satisfy
+The general verified result is the information-theoretic lower bound. Any
+deterministic strategy that solves every permutation secret in at most `T`
+rounds must satisfy
 
 ```text
 n! <= (2 * (n + 1))^T.
@@ -22,6 +23,14 @@ The full argument, scope, and literature check are in
 [`research/proof-notes.md`](research/proof-notes.md). The Lean theorem is
 `BlackPegExtraCheck.decisionTreeLowerBound` in
 [`BlackPegExtraCheck/DecisionTree.lean`](BlackPegExtraCheck/DecisionTree.lean).
+
+The fixed AB-Mastermind case with ten fields and eleven non-repeating colors is
+developed in
+[`research/ten-fields-eleven-colors/proof.md`](research/ten-fields-eleven-colors/proof.md).
+It proves the requested bounds `5 <= T+(10, 11) <= 45`; the same arguments give
+the stronger numerical bounds `6 <= T+(10, 11) <= 44`. The corresponding Lean
+lemmas are in
+[`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean).
 
 ## Verification
 
