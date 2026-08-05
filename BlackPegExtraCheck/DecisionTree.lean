@@ -43,7 +43,7 @@ abbrev Transcript (n rounds : Nat) := Fin rounds → RoundAnswer n
 
 @[simp] theorem card_transcript (n rounds : Nat) :
     Fintype.card (Transcript n rounds) = (2 * (n + 1)) ^ rounds := by
-  simp [Transcript]
+  simp [Transcript, Nat.mul_comm]
 
 /--
 The decision-tree lower bound. `encode` is the complete padded transcript
@@ -55,6 +55,6 @@ theorem decisionTreeLowerBound {n rounds : Nat}
     (encode : Secret n → Transcript n rounds)
     (solves : Function.Injective encode) :
     Nat.factorial n ≤ (2 * (n + 1)) ^ rounds := by
-  simpa using Fintype.card_le_of_injective encode solves
+  simpa [Nat.mul_comm] using Fintype.card_le_of_injective encode solves
 
 end BlackPegExtraCheck
