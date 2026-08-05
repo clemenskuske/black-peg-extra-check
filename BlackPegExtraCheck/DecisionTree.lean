@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2026 Clemens Kuske. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Clemens Kuske, OpenAI Codex
+-/
+import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Perm
 
 /-!
