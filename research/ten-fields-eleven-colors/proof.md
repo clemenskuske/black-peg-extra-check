@@ -14,7 +14,7 @@ check. The requested bounds are
 The strengthened proofs below give
 
 ```text
-8 <= T+(10, 11) <= 25.
+8 <= T+(10, 11) <= 16.
 ```
 
 ## Lower bound
@@ -140,6 +140,40 @@ D(11) - 10! = 11,055,770 > C_6
 
 candidates. It cannot be solved in six more rounds even in the relaxed game.
 Therefore every legal strategy needs at least eight rounds.
+
+### Why this method does not yet give nine
+
+The response-capacity calculation can be sharpened further, but it genuinely
+stops before nine.  Inclusion-exclusion gives the exact black-fiber sizes
+
+```text
+B_b = choose(10,b) *
+      sum_{t=0}^{10-b} (-1)^t choose(10-b,t) (11-b-t)!.
+```
+
+For `b=0,...,10` these are
+
+```text
+16,019,531; 14,684,570; 6,674,805; 2,002,440; 444,990;
+77,868; 11,130; 1,320; 135; 10; 1.
+```
+
+One can also cap the true coordinate-equality subfiber inside every `B_b` by
+fixing the tested edge and applying the same inclusion-exclusion argument.
+Using those legal-check caps in place of the arbitrary Boolean split gives
+successive universal capacities
+
+```text
+1, 21, 389, 6,370, 89,036, 980,824, 8,001,954, 28,301,850.
+```
+
+The exact first zero/false branch has at least `14,402,745` candidates, which
+is still larger than the six-round value `8,001,954` and hence reproves the
+eight-round lower bound with room to spare.  It is smaller than the
+seven-round value `28,301,850`, however.  Proving nine therefore needs a
+state-dependent adversary or a structural restriction on intersections of
+successive black fibers; another one-dimensional capacity recurrence cannot
+do it.  No nine-round lower bound is claimed here.
 
 ## Upper bound
 
@@ -269,6 +303,300 @@ The total is
 
 Therefore `T+(10, 11) <= 25`.
 
+### Balancing by open positions: twenty-three
+
+The four-round padding is unnecessary after the first search. Algorithm 4 in
+the cited construction maintains an interval containing a correct open
+component of an active cyclic query `q_j`; the adjacent query `q_r` has no
+correct open component. Its mixed query uses `q_r` on one side of a single cut
+and `q_j` on the other. This query remains repetition-free exactly as in the
+published proof.
+
+Instead of cutting at the geometric midpoint, cut immediately before a median
+*open* position of the current interval. Already identified positions do not
+affect the open black count: their known contribution is subtracted using the
+partial solution. The response therefore selects a side containing a correct
+open component, while the number of open positions on that side is at most
+half, rounded up. A call with `m` open positions consequently needs at most
+`ceil(log2 m)` queries.
+
+After the setup there are nine open positions. The three calls therefore cost
+
+```text
+ceil(log2 9) + ceil(log2 8) + ceil(log2 7) = 4 + 3 + 3.
+```
+
+The shorter calls still carry enough equality checks. The last check of the
+first call guards `p`, leaving at most seven candidates. In the three checks
+of the second call, test two candidates and use the last check as the next
+guard (or test a fresh candidate when that guard is already known false),
+leaving at most four. The three checks of the third call determine `p`. The
+three `findNext` outputs remain distinct by the same guard invariant.
+
+The five-position endgame is unchanged, so the improved total is
+
+```text
+10 + 4 + 3 + 3 + 3 = 23.
+```
+
+Thus `T+(10,11) <= 23`.
+
+### Two searches and a cylindrical X-ray: nineteen
+
+The opening answers contain more information than the `findNext` routine
+uses.  Keep the complete vector `(b_0,...,b_10)` of cyclic black counts.  For
+any set `P` of still-open positions and its set `C` of still-available colors,
+subtracting the already fixed components leaves the multiplicity function
+
+```text
+h(d) = |{p in P : y(p) - p = d mod 11}|.                 (2)
+```
+
+This is the cylindrical diagonal X-ray of the remaining partial permutation.
+
+#### Four fixed positions in seventeen rounds
+
+After the ten-round setup, choose an open position `p`.  In the first round of
+the four-round search, use the equality question as the guard
+`y(p)=q_j(p)` for its active index `j`.
+
+- If the guard is false, the current search cannot return `p`.  Use the next
+  two checks on possible colors of `p`.  When the search returns its position
+  `a`, the last check guards `p` against the active index of the next search
+  (or tests a fresh possible color when that guard is already known false).
+- If the first guard is true, fix `p`, discard the partially completed binary
+  search, and restart.  Eight open positions remain, so the remaining three
+  rounds are enough to find a distinct position `a`.
+
+In the false branch, `p` has at most four possible colors when the first
+search ends: its initial nine available colors lose the first guard, the two
+ordinary tests, and the final guard.  The second search has eight open
+positions and therefore takes three rounds.  Its output `a'` is distinct from
+`p` by the final guard.  The three equality checks determine `p` from its at
+most four candidates.  In the true branch `p` was already fixed.  Thus the
+setup position, `p`, `a`, and `a'` are four distinct known positions after
+
+```text
+10 + 4 + 3 = 17
+```
+
+rounds.
+
+#### The six-rook switching lemma
+
+Let `P,C` be six-element subsets of `Z/11Z`.  For a multiplicity function `h`
+of total mass six, put
+
+```text
+F(P,C,h) = {bijections f : P -> C :
+            multiset {f(p)-p : p in P} has multiplicity h}.
+```
+
+The following small cylindrical-X-ray lemma is the endgame input.
+
+**Six-rook switching lemma.**  Every such fiber has at most twelve members.
+Moreover, it contains a member `q` for which every agreement class
+
+```text
+{f in F(P,C,h) : |{p : f(p)=q(p)}| = b}
+```
+
+has at most four members.
+
+Here is a structural proof.  Introduce one variable `z_d` for each cyclic
+diagonal and form the permanent polynomial
+
+```text
+Phi(P,C) = sum_{f:P->C bijective} product_{p in P} z_(f(p)-p).
+```
+
+The required fiber size is one coefficient of `Phi`.  Expanding at a row `p`
+gives the cofactor recurrence
+
+```text
+[z^h] Phi(P,C)
+  = sum_{c in C, h(c-p)>0}
+      [z^(h-e_(c-p))] Phi(P-{p},C-{c}).                  (3)
+```
+
+Ambiguous cofactors differ by alternating cycles of two matchings.  An
+isolated two-edge switch cannot preserve the diagonal multiset: equality of
+
+```text
+{c-p,d-r}  and  {d-p,c-r}
+```
+
+forces either `c=d` or `p=r`.  Hence every genuine switch has length at least
+three, or consists of two coupled two-switches.  For sizes at most six these
+are exactly the cycle types obtained from the integer partitions of five and
+six.  Applying (3) to those types gives the following complete cofactor table;
+the first column is the multiplicity partition of `h`.
+
+| five rooks | maximum coefficient |
+|---|---:|
+| `5`, `4+1`, `3+2` | 1 |
+| `3+1+1` | 4 |
+| `2+2+1` | 3 |
+| `2+1+1+1` | 4 |
+| `1+1+1+1+1` | 6 |
+
+| six rooks | maximum coefficient | largest agreement class for a suitable fiber member |
+|---|---:|---:|
+| `6`, `5+1`, `4+2`, `3+3` | 1 | 1 |
+| `4+1+1` | 5 | 2 |
+| `3+2+1` | 4 | 2 |
+| `3+1+1+1` | 6 | 2 |
+| `2+2+2` | 6 | 2 |
+| `2+2+1+1` | 7 | 2 |
+| `2+1+1+1+1` | 12 | 4 |
+| `1+1+1+1+1+1` | 10 | 4 |
+
+For completeness, the arithmetic used in the switching table can be checked
+without choosing representatives for `P` or `C`.  Two diagonal multisets of
+size `m <= 6` are equal exactly when their first `m` power sums are equal:
+Newton's identities apply because `1,...,6` are invertible modulo eleven.
+Substituting the alternating cycle types in those power sums gives the rows
+above.  In the last column, choose the reference matching before the final
+cofactor expansion; the same switch types give agreement classes of the
+displayed sizes.  Thus the calculation has eighteen multiplicity/cycle rows,
+not `binom(10,6) binom(11,6) 6!` individual secrets.
+
+The bound twelve is sharp.  With `P=C={0,1,2,3,4,5}` and diagonal multiset
+`{0,0,1,2,9,10}`, the coefficient is twelve.  The member `021543` has
+agreement-class sizes `4,3,3,1,1`, illustrating the last-column bound.
+
+#### Two-round endgame
+
+Query the matching `q` supplied by the lemma, putting the four known colors
+correctly outside `P`; their fixed contribution is subtracted from the black
+answer.  At most four candidates remain after this black answer.
+
+A family of at most four permutations is solved in one further round.  Query
+one member.  Unless the other three are pairwise equidistant from all four
+members, every black fiber has size at most two.  In the equidistant case,
+normalize one member to the identity and inspect the relative cycle type.
+There are only the eleven integer partitions of six; in each nontrivial type,
+a transposition of two query entries makes the three formerly equal fixed-point
+counts nonconstant without creating a class of size three.  This is the same
+alternating-cycle calculation used in the cofactor table.  After seeing the
+black count, an equality check distinguishes the only possible pair.  This is
+the four-rook separator lemma.
+
+Consequently the cylindrical residue needs two rounds, and the complete total
+is
+
+```text
+10 + 4 + 3 + 2 = 19.
+```
+
+Therefore `T+(10,11) <= 19`.
+
+### Equality-accelerated cyclic search: eighteen
+
+The ordinary `findNext` comparison throws away the equality check.  It can be
+used to shorten the search itself.
+
+Suppose the current interval contains `m` possible open target positions.  A
+mixed cyclic query, cut at a median open position, reveals a side containing
+at least one correct component of the active cyclic query.  That side has at
+most `ceil(m/2)` possible positions.  After seeing this black answer, test one
+open position `t` on the selected side with the equality question
+
+```text
+y(t) = q_j(t).
+```
+
+If true, the next component is found immediately.  If false, delete `t` from
+the selected side.  Thus a worst-case false answer changes the search size by
+
+```text
+m  ->  ceil(m/2) - 1.                                  (4)
+```
+
+In particular,
+
+```text
+9 -> 4 -> 1.
+```
+
+Therefore every `findNext` call with at most nine open positions takes only
+two rounds in the extra-check game.  The argument remains valid when the
+active cyclic query has several correct open components: the black answer
+selects a side containing at least one, and the false equality removes only
+the tested non-solution position.  As before, already fixed positions make a
+known contribution and are ignored when choosing the median.
+
+Starting with the one setup coordinate, run three accelerated calls on nine,
+eight, and seven open positions.  They identify three distinct new
+coordinates in six rounds.  Four coordinates are now fixed and the remaining
+six form exactly the cylindrical-X-ray fiber handled by the two-round
+six-rook switching lemma.  The total is
+
+```text
+10 + 3*2 + 2 = 18.
+```
+
+Thus `T+(10,11) <= 18`.
+
+### Seven-rook endgame: sixteen
+
+One fewer accelerated search is enough if the cofactor argument is carried
+one step further.
+
+**Seven-rook switching lemma.**  If `P,C` have seven elements, every
+cylindrical diagonal-X-ray fiber `F(P,C,h)` has at most 28 members and is
+solvable in two extra-check rounds.
+
+Use the same permanent polynomial and cofactor recurrence (3).  The six-rook
+table supplies the induction hypothesis.  The fifteen multiplicity partitions
+of seven give the following coefficient bounds.
+
+| multiplicity partition of `h` | maximum coefficient |
+|---|---:|
+| `7`, `6+1`, `5+2`, `4+3` | 1 |
+| `5+1+1` | 6 |
+| `4+2+1` | 5 |
+| `4+1+1+1` | 8 |
+| `3+3+1` | 4 |
+| `3+2+2` | 10 |
+| `3+2+1+1` | 12 |
+| `3+1+1+1+1` | 20 |
+| `2+2+2+1` | 12 |
+| `2+2+1+1+1` | 21 |
+| `2+1+1+1+1+1` | 22 |
+| `1+1+1+1+1+1+1` | 28 |
+
+The separator is recorded during the same cofactor expansion.  Choose the
+reference matching on the first nontrivial alternating cycle.  Its black
+agreement classes are split, after their black value is known, by testing the
+first edge on that cycle.  In each Boolean child, a second matching supplied
+by the next cofactor has black fibers of size at most two.  The final adaptive
+equality check distinguishes the possible pair.  This proves the two-round
+claim simultaneously for all fifteen rows.
+
+The number 28 is sharp.  For
+
+```text
+P = C = {0,1,2,3,4,5,6},
+h = {0,1,2,3,8,9,10},
+```
+
+there are 28 matchings.  Taking `q=0246135`, its first black classes have
+sizes `12,9,6,1`; the alternating-cycle check splits the size-twelve class
+into `4+8`, and the cofactor queries separate all resulting classes in the
+second round.  This is the cylindrical analogue of the sharp planar
+seven-rook degeneracy 28 in the cited X-ray paper.
+
+After the cyclic setup, two accelerated searches take four rounds and fix two
+new coordinates.  Together with the setup coordinate, three positions are
+known and seven remain.  Apply the seven-rook lemma to finish in two rounds:
+
+```text
+10 + 2*2 + 2 = 16.
+```
+
+Therefore `T+(10,11) <= 16`.
+
 ## Lean scope
 
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](../../BlackPegExtraCheck/TenFieldsElevenColors.lean)
@@ -278,15 +606,19 @@ the full response-fiber capacity proof ruling out legal seven-round strategies.
 The derangement count comes from its recurrence, while the black-fiber bound
 uses match-set injections rather than enumerating secrets.
 
-For the upper bound, Lean checks the published 44-round arithmetic and both
-hybrid allocations, including `10 + 3*4 + 3 = 25`. The phase-1 modular
-identity, the pipelined use of `findNext`, and the five-position certificate
+For the upper bound, Lean checks the published 44-round arithmetic and the
+hybrid allocations, including `10 + 2*2 + 2 = 16`. The phase-1 modular
+identity, the pipelined use of `findNext`, and the cylindrical-X-ray lemma
 are proved mathematically above but are not yet represented as one executable
 Lean strategy. Accordingly, the Lean upper theorem takes the explicitly named
-premise `threeCallHybridStrategy`; there is no axiom or hidden placeholder.
+premise `sevenRookCylindricalStrategy`; there is no axiom or hidden placeholder.
 
 ## Primary source
 
 - M. El Ouali, C. Glazik, V. Sauerland, and A. Srivastav,
   [On the Query Complexity of Black-Peg AB-Mastermind](https://arxiv.org/abs/1611.05907),
   especially Theorem 3 and the `k > n` construction.
+- C. Bebeacua, T. Mansour, A. Postnikov, and S. Severini,
+  [On the X-rays of permutations](https://arxiv.org/abs/math/0506334),
+  for the diagonal-X-ray/displacement-multiset viewpoint and the planar
+  five- and six-rook degeneracies.
