@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Clemens Kuske, OpenAI Codex
 -/
 import BlackPegExtraCheck.DecisionTree
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Combinatorics.Derangements.Finite
 import Mathlib.Data.Fintype.CardEmbedding
 import Mathlib.Logic.Equiv.Fintype
@@ -18,18 +19,21 @@ fields and eleven colors. A secret is an embedding `Fin 10 ↪ Fin 11`, because
 the ten entries are pairwise distinct. A round has eleven possible black-peg
 counts and one Boolean extra-check answer, hence 22 possible answer pairs.
 
-The information lower bound gives six rounds. A structural refinement gives
-seven: after the first query, the zero-black branch contains a relabeled copy
-of every derangement of eleven colors. One equality check removes at most
-`10!` of these secrets, leaving too many for five further rounds.
+The information lower bound gives six rounds. A first structural refinement
+gives seven using a large zero/false branch. A response-fiber capacity
+recurrence then proves eight: even if every later extra check were an arbitrary
+Boolean predicate, six rounds distinguish at most `10,676,379` candidates,
+fewer than the zero/false branch left after round one.
 
-For the upper bound, the file records both the published 44-round classical
-bound and the 27-round cost of the hybrid protocol described in the proof
-notes. The latter pipelines the extra equality checks through the paper's
-four-round `findNext` routine.
+For the upper bound, the file records the published 44-round classical bound,
+the earlier 27-round hybrid protocol, and the 25-round allocation described in
+the proof notes. The last protocol uses three pipelined `findNext` calls and a
+three-round five-position endgame certificate.
 -/
 
 namespace BlackPegExtraCheck
+
+open scoped BigOperators
 
 /-- A ten-field secret drawn without repetition from eleven colors. -/
 abbrev TenElevenSecret := Fin 10 ↪ Fin 11
@@ -291,6 +295,329 @@ theorem tenElevenLowerBoundSeven (firstGuess : TenElevenSecret)
   exact (Nat.not_lt_of_ge capacity)
     (card_zeroFalseSecrets_large firstGuess checkPosition checkColor)
 
+/-! ## A response-fiber capacity bound and the eight-round lower bound -/
+
+/-- The positions where `secret` agrees with `guess`. -/
+def MatchSet (guess secret : TenElevenSecret) : Finset (Fin 10) :=
+  Finset.univ.filter fun i => secret i = guess i
+
+/-- Secrets agreeing with `guess` throughout the prescribed position set. -/
+noncomputable def FixedSetFinset (guess : TenElevenSecret) (S : Finset (Fin 10)) :
+    Finset TenElevenSecret :=
+  Finset.univ.filter fun secret => ∀ i ∈ S, secret i = guess i
+
+/-- Positions outside a prescribed set. -/
+abbrev RemainingPositions (S : Finset (Fin 10)) :=
+  ↥(Finset.univ \ S)
+
+/-- Colors not consumed by the prescribed matches. -/
+abbrev RemainingColors (guess : TenElevenSecret) (S : Finset (Fin 10)) :=
+  ↥(Finset.univ \ S.image guess)
+
+/-- Delete all prescribed matches from a secret. -/
+noncomputable def removeFixedSet (guess : TenElevenSecret) (S : Finset (Fin 10)) :
+    ↥(FixedSetFinset guess S) →
+      (RemainingPositions S ↪ RemainingColors guess S) :=
+  fun secret =>
+    { toFun := fun i =>
+        ⟨secret.1 i.1, by
+          simp only [Finset.mem_sdiff, Finset.mem_univ, true_and,
+            Finset.mem_image, not_exists, not_and]
+          intro j hj
+          have fixed_j : secret.1 j = guess j :=
+            (Finset.mem_filter.1 secret.2).2 j hj
+          intro secret_i_eq_guess_j
+          have collision : secret.1 i.1 = secret.1 j :=
+            secret_i_eq_guess_j.symm.trans fixed_j.symm
+          have hi_not : i.1 ∉ S := (Finset.mem_sdiff.1 i.property).2
+          exact hi_not ((secret.1.injective collision) ▸ hj)⟩
+      inj' := fun _ _ h => Subtype.ext (secret.1.injective (congrArg Subtype.val h)) }
+
+theorem removeFixedSet_injective (guess : TenElevenSecret) (S : Finset (Fin 10)) :
+    Function.Injective (removeFixedSet guess S) := by
+  intro secret₁ secret₂ restrictions_equal
+  apply Subtype.ext
+  apply Function.Embedding.ext
+  intro i
+  by_cases hi : i ∈ S
+  · have fixed₁ := (Finset.mem_filter.1 secret₁.2).2 i hi
+    have fixed₂ := (Finset.mem_filter.1 secret₂.2).2 i hi
+    exact fixed₁.trans fixed₂.symm
+  · have restricted_equal := congrArg
+      (fun restriction : RemainingPositions S ↪ RemainingColors guess S =>
+        restriction ⟨i, by simp [hi]⟩)
+      restrictions_equal
+    exact congrArg Subtype.val restricted_equal
+
+theorem card_remainingPositions (S : Finset (Fin 10)) :
+    Fintype.card (RemainingPositions S) = 10 - S.card := by
+  simp [RemainingPositions]
+
+theorem card_remainingColors (guess : TenElevenSecret) (S : Finset (Fin 10)) :
+    Fintype.card (RemainingColors guess S) = 11 - S.card := by
+  rw [Fintype.card_coe, Finset.card_sdiff]
+  simp only [Finset.inter_univ, Finset.card_univ, Fintype.card_fin]
+  rw [Finset.card_image_of_injective _ guess.injective]
+
+/-- Fixing `b` specified matches leaves at most `(11-b)!` extensions. -/
+theorem card_fixedSetFinset_upper (guess : TenElevenSecret) (S : Finset (Fin 10)) :
+    (FixedSetFinset guess S).card ≤
+      (11 - S.card).descFactorial (10 - S.card) := by
+  rw [← Fintype.card_coe]
+  calc
+    Fintype.card ↥(FixedSetFinset guess S) ≤
+        Fintype.card (RemainingPositions S ↪ RemainingColors guess S) :=
+      Fintype.card_le_of_injective (removeFixedSet guess S)
+        (removeFixedSet_injective guess S)
+    _ = (11 - S.card).descFactorial (10 - S.card) := by
+      rw [Fintype.card_embedding_eq, card_remainingPositions, card_remainingColors]
+
+noncomputable def BlackFiberFinset (guess : TenElevenSecret) (b : Nat) :
+    Finset TenElevenSecret :=
+  Finset.univ.filter fun secret => (MatchSet guess secret).card = b
+
+theorem blackFiber_subset_fixedSet_union (guess : TenElevenSecret) (b : Nat) :
+    BlackFiberFinset guess b ⊆
+      ((Finset.univ : Finset (Fin 10)).powersetCard b).biUnion
+        (FixedSetFinset guess) := by
+  classical
+  intro secret hsecret
+  have hcard : (MatchSet guess secret).card = b :=
+    (Finset.mem_filter.1 hsecret).2
+  apply Finset.mem_biUnion.2
+  refine ⟨MatchSet guess secret, ?_, ?_⟩
+  · exact Finset.mem_powersetCard.2 ⟨Finset.subset_univ _, hcard⟩
+  · apply Finset.mem_filter.2
+    refine ⟨Finset.mem_univ _, ?_⟩
+    intro i hi
+    exact (Finset.mem_filter.1 hi).2
+
+/--
+A black-answer fiber with value `b` has at most
+`choose 10 b * (11-b)!` secrets. This is a union bound over its match set, not
+an enumeration of secrets.
+-/
+theorem card_blackFiberFinset_upper (guess : TenElevenSecret) (b : Nat) :
+    (BlackFiberFinset guess b).card ≤
+      Nat.choose 10 b * (11 - b).descFactorial (10 - b) := by
+  classical
+  calc
+    (BlackFiberFinset guess b).card ≤
+        ((Finset.univ.powersetCard b).biUnion (FixedSetFinset guess)).card :=
+      Finset.card_le_card (blackFiber_subset_fixedSet_union guess b)
+    _ ≤ ∑ S ∈ (Finset.univ : Finset (Fin 10)).powersetCard b,
+        (FixedSetFinset guess S).card :=
+      Finset.card_biUnion_le
+    _ ≤ ∑ _S ∈ (Finset.univ : Finset (Fin 10)).powersetCard b,
+        (11 - b).descFactorial (10 - b) := by
+      exact Finset.sum_le_sum fun S hS => by
+        have hcard : S.card = b := (Finset.mem_powersetCard.1 hS).2
+        simpa [hcard] using card_fixedSetFinset_upper guess S
+    _ = Nat.choose 10 b * (11 - b).descFactorial (10 - b) := by
+      simp
+
+def tenElevenBlackAnswer (guess secret : TenElevenSecret) : Fin 11 :=
+  ⟨(MatchSet guess secret).card, by
+    have hle : (MatchSet guess secret).card ≤ 10 := by
+      exact (MatchSet guess secret).card_le_univ.trans_eq (by simp)
+    omega⟩
+
+def tenElevenBlackFiberCap (b : Fin 11) : Nat :=
+  Nat.choose 10 b.1 * (11 - b.1).descFactorial (10 - b.1)
+
+theorem card_tenElevenBlackFiber_upper (guess : TenElevenSecret) (b : Fin 11) :
+    (Finset.univ.filter fun secret => tenElevenBlackAnswer guess secret = b).card ≤
+      tenElevenBlackFiberCap b := by
+  have subset :
+      (Finset.univ.filter fun secret => tenElevenBlackAnswer guess secret = b) ⊆
+        BlackFiberFinset guess b.1 := by
+    intro secret hsecret
+    apply Finset.mem_filter.2
+    refine ⟨Finset.mem_univ _, ?_⟩
+    exact congrArg Fin.val (Finset.mem_filter.1 hsecret).2
+  exact (Finset.card_le_card subset).trans (card_blackFiberFinset_upper guess b.1)
+
+/--
+A relaxed strategy still uses legal black queries, but its extra bit may be an
+arbitrary Boolean predicate. Bounding this stronger game also bounds the real
+coordinate-equality game.
+-/
+inductive TenElevenRelaxedStrategy : Nat → Type
+  | leaf : TenElevenRelaxedStrategy 0
+  | node {rounds : Nat}
+      (guess : TenElevenSecret)
+      (extra : Fin 11 → TenElevenSecret → Bool)
+      (next : Fin 11 → Bool → TenElevenRelaxedStrategy rounds) :
+      TenElevenRelaxedStrategy (rounds + 1)
+
+namespace TenElevenRelaxedStrategy
+
+noncomputable def blackBranch (candidates : Finset TenElevenSecret)
+    (guess : TenElevenSecret) (b : Fin 11) : Finset TenElevenSecret :=
+  candidates.filter fun secret => tenElevenBlackAnswer guess secret = b
+
+noncomputable def answerBranch (candidates : Finset TenElevenSecret)
+    (guess : TenElevenSecret) (extra : Fin 11 → TenElevenSecret → Bool)
+    (b : Fin 11) (bit : Bool) : Finset TenElevenSecret :=
+  (blackBranch candidates guess b).filter fun secret => extra b secret = bit
+
+def Solves : {rounds : Nat} →
+    TenElevenRelaxedStrategy rounds → Finset TenElevenSecret → Prop
+  | 0, .leaf, candidates => candidates.card ≤ 1
+  | _ + 1, .node guess extra next, candidates =>
+      ∀ b bit, (next b bit).Solves (answerBranch candidates guess extra b bit)
+
+end TenElevenRelaxedStrategy
+
+/-- Universal candidate capacity for the relaxed game. -/
+def tenElevenRelaxedCapacity : Nat → Nat
+  | 0 => 1
+  | rounds + 1 => ∑ b : Fin 11,
+      min (tenElevenBlackFiberCap b) (2 * tenElevenRelaxedCapacity rounds)
+
+@[simp] theorem tenElevenRelaxedCapacity_six :
+    tenElevenRelaxedCapacity 6 = 10676379 := by
+  decide
+
+theorem TenElevenRelaxedStrategy.card_le_capacity {rounds : Nat}
+    (tree : TenElevenRelaxedStrategy rounds) (candidates : Finset TenElevenSecret)
+    (solves : tree.Solves candidates) :
+    candidates.card ≤ tenElevenRelaxedCapacity rounds := by
+  induction tree generalizing candidates with
+  | leaf => exact solves
+  | @node rounds guess extra next ih =>
+      rw [tenElevenRelaxedCapacity]
+      rw [Finset.card_eq_sum_card_fiberwise
+        (s := candidates) (t := Finset.univ)
+        (f := tenElevenBlackAnswer guess) (by simp)]
+      apply Finset.sum_le_sum
+      intro b _hb
+      apply le_min
+      · apply (Finset.card_le_card ?_).trans (card_tenElevenBlackFiber_upper guess b)
+        intro secret hsecret
+        exact Finset.mem_filter.2 ⟨Finset.mem_univ _, (Finset.mem_filter.1 hsecret).2⟩
+      · change (TenElevenRelaxedStrategy.blackBranch candidates guess b).card ≤ _
+        rw [Finset.card_eq_sum_card_fiberwise
+          (s := TenElevenRelaxedStrategy.blackBranch candidates guess b)
+          (t := Finset.univ) (f := extra b) (by
+            intro _secret _hsecret
+            exact Finset.mem_univ _)]
+        change (∑ bit : Bool,
+          (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit).card) ≤ _
+        calc
+          ∑ bit : Bool,
+              (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit).card
+              ≤ ∑ _bit : Bool, tenElevenRelaxedCapacity rounds := by
+            apply Finset.sum_le_sum
+            intro bit _hbit
+            exact ih b bit
+              (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit)
+              (solves b bit)
+          _ = 2 * tenElevenRelaxedCapacity rounds := by simp
+
+noncomputable def ZeroFalseFinset (guess : TenElevenSecret) (i : Fin 10)
+    (color : Fin 11) : Finset TenElevenSecret :=
+  Finset.univ.filter fun secret =>
+    (∀ j, secret j ≠ guess j) ∧ secret i ≠ color
+
+noncomputable def zeroFalseFinsetEquiv (guess : TenElevenSecret) (i : Fin 10)
+    (color : Fin 11) :
+    ↥(ZeroFalseFinset guess i color) ≃ ZeroFalseSecrets guess i color where
+  toFun secret := by
+    have properties := (Finset.mem_filter.1 secret.2).2
+    exact ⟨⟨secret.1, properties.1⟩, properties.2⟩
+  invFun secret :=
+    ⟨secret.1.1, Finset.mem_filter.2 ⟨Finset.mem_univ _, secret.1.2, secret.2⟩⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+@[simp] theorem card_zeroFalseFinset (guess : TenElevenSecret) (i : Fin 10)
+    (color : Fin 11) :
+    (ZeroFalseFinset guess i color).card =
+      Fintype.card (ZeroFalseSecrets guess i color) := by
+  rw [← Fintype.card_coe]
+  exact Fintype.card_congr (zeroFalseFinsetEquiv guess i color)
+
+theorem card_zeroFalseFinset_exceeds_capacity_six (guess : TenElevenSecret)
+    (i : Fin 10) (color : Fin 11) :
+    tenElevenRelaxedCapacity 6 < (ZeroFalseFinset guess i color).card := by
+  rw [card_zeroFalseFinset, tenElevenRelaxedCapacity_six]
+  have zero_large := card_zeroBlackSecrets_lower guess
+  have true_small := card_zeroTrueSecrets_upper guess i color
+  have false_card := Fintype.card_subtype_compl
+    (fun secret : ZeroBlackSecrets guess => secret.1 i = color)
+  change Fintype.card (ZeroFalseSecrets guess i color) =
+    Fintype.card (ZeroBlackSecrets guess) -
+      Fintype.card (ZeroTrueSecrets guess i color) at false_card
+  omega
+
+theorem tenElevenBlackAnswer_eq_zero_iff (guess secret : TenElevenSecret) :
+    tenElevenBlackAnswer guess secret = 0 ↔ ∀ i, secret i ≠ guess i := by
+  constructor
+  · intro answer_zero i equal_at_i
+    have card_zero : (MatchSet guess secret).card = 0 :=
+      congrArg Fin.val answer_zero
+    have set_empty : MatchSet guess secret = ∅ := Finset.card_eq_zero.1 card_zero
+    have member : i ∈ MatchSet guess secret := by simp [MatchSet, equal_at_i]
+    rw [set_empty] at member
+    simp at member
+  · intro no_matches
+    apply Fin.ext
+    simp [tenElevenBlackAnswer, MatchSet, no_matches]
+
+/-- Legal adaptive strategies with a coordinate-equality extra check. -/
+inductive TenElevenStrategy : Nat → Type
+  | leaf : TenElevenStrategy 0
+  | node {rounds : Nat}
+      (guess : TenElevenSecret)
+      (check : Fin 11 → Fin 10 × Fin 11)
+      (next : Fin 11 → Bool → TenElevenStrategy rounds) :
+      TenElevenStrategy (rounds + 1)
+
+def TenElevenStrategy.toRelaxed : {rounds : Nat} →
+    TenElevenStrategy rounds → TenElevenRelaxedStrategy rounds
+  | 0, .leaf => .leaf
+  | _ + 1, .node guess check next =>
+      .node guess
+        (fun b secret => decide (secret (check b).1 = (check b).2))
+        (fun b bit => (next b bit).toRelaxed)
+
+def TenElevenStrategy.Solves {rounds : Nat} (tree : TenElevenStrategy rounds)
+    (candidates : Finset TenElevenSecret) : Prop :=
+  tree.toRelaxed.Solves candidates
+
+theorem first_zero_false_branch (guess : TenElevenSecret)
+    (check : Fin 11 → Fin 10 × Fin 11) :
+    TenElevenRelaxedStrategy.answerBranch Finset.univ guess
+        (fun b secret => decide (secret (check b).1 = (check b).2)) 0 false =
+      ZeroFalseFinset guess (check 0).1 (check 0).2 := by
+  classical
+  ext secret
+  simp [TenElevenRelaxedStrategy.answerBranch,
+    TenElevenRelaxedStrategy.blackBranch, ZeroFalseFinset,
+    tenElevenBlackAnswer_eq_zero_iff]
+
+/--
+The structural lower bound `T⁺(10,11) ≥ 8`: no legal seven-round strategy
+solves every secret. Any shorter strategy can be padded to seven rounds.
+-/
+theorem tenElevenLowerBoundEight
+    (tree : TenElevenStrategy 7) (solves : tree.Solves Finset.univ) : False := by
+  cases tree with
+  | node guess check next =>
+      have branch_solves := solves (0 : Fin 11) false
+      rw [first_zero_false_branch guess check] at branch_solves
+      have upper := TenElevenRelaxedStrategy.card_le_capacity
+        ((next 0 false).toRelaxed)
+        (ZeroFalseFinset guess (check 0).1 (check 0).2) branch_solves
+      have upper' :
+          (ZeroFalseFinset guess (check 0).1 (check 0).2).card ≤
+            tenElevenRelaxedCapacity 6 := by
+        simpa using upper
+      have lower := card_zeroFalseFinset_exceeds_capacity_six
+        guess (check 0).1 (check 0).2
+      omega
+
 /--
 The numerical value of the published classical AB-Mastermind construction at
 ten fields and eleven colors: `(10 - 2) * ⌈log₂ 10⌉ + 11 + 1 = 44`.
@@ -343,5 +670,23 @@ theorem tenElevenUpperBoundTwentyEight {TPlus : Nat}
     TPlus ≤ 28 := by
   have stronger := tenElevenUpperBoundTwentySeven hybridStrategy
   omega
+
+/-! ## Three-call hybrid upper bound -/
+
+/--
+Ten cyclic setup rounds, three padded `findNext` calls, and the three-round
+five-position endgame from the proof notes.
+-/
+def tenElevenThreeCallRoundBound : Nat := 10 + 3 * 4 + 3
+
+@[simp] theorem tenElevenThreeCallRoundBound_eq :
+    tenElevenThreeCallRoundBound = 25 := by
+  norm_num [tenElevenThreeCallRoundBound]
+
+/-- The three-call hybrid protocol gives `T⁺(10,11) ≤ 25`. -/
+theorem tenElevenUpperBoundTwentyFive {TPlus : Nat}
+    (threeCallHybridStrategy : TPlus ≤ tenElevenThreeCallRoundBound) :
+    TPlus ≤ 25 := by
+  simpa using threeCallHybridStrategy
 
 end BlackPegExtraCheck

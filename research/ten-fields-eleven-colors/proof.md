@@ -14,7 +14,7 @@ check. The requested bounds are
 The strengthened proofs below give
 
 ```text
-7 <= T+(10, 11) <= 27.
+8 <= T+(10, 11) <= 25.
 ```
 
 ## Lower bound
@@ -97,6 +97,50 @@ secrets. But five more rounds have only
 transcripts. Thus no six-round strategy can solve that branch, proving
 `T+(10, 11) >= 7`.
 
+### Response-fiber improvement to eight
+
+The same branch is also too large for six *legal* continuation rounds. This
+requires a sharper capacity bound than `22^6`, but still no game-tree search.
+
+Fix a query and black answer `b`. Choose the `b` matching positions first.
+After deleting their positions and colors, the rest of the secret is an
+injection from `10-b` positions into `11-b` colors. Thus the complete black
+fiber has size at most
+
+```text
+U_b = choose(10,b) * (11-b)!.
+```
+
+Let `C_r` be the largest number of candidates distinguishable in `r` rounds
+of a relaxed game: black queries remain legal, while the extra check may be an
+arbitrary Boolean predicate. Set `C_0=1`. Each black fiber contains at most
+`U_b` candidates, and its two Boolean children solve at most `2*C_r`, so
+
+```text
+C_(r+1) = sum_{b=0}^{10} min(U_b, 2*C_r).
+```
+
+This recurrence gives
+
+```text
+C_0 =          1
+C_1 =         21
+C_2 =        399
+C_3 =      6,675
+C_4 =     96,621
+C_5 =  1,176,021
+C_6 = 10,676,379.
+```
+
+But the first-round zero/false branch contains at least
+
+```text
+D(11) - 10! = 11,055,770 > C_6
+```
+
+candidates. It cannot be solved in six more rounds even in the relaxed game.
+Therefore every legal strategy needs at least eight rounds.
+
 ## Upper bound
 
 El Ouali, Glazik, Sauerland, and Srivastav give a constructive strategy for
@@ -124,7 +168,7 @@ The extra-check game may ignore its additional Boolean answer and run exactly
 this classical strategy. Therefore `T+(10, 11) <= 44`, which immediately gives
 the originally requested `T+(10, 11) <= 45`.
 
-### Hybrid improvement to twenty-seven
+### Hybrid improvement to twenty-five
 
 The extra checks can be integrated into the classical construction much more
 effectively.
@@ -154,7 +198,7 @@ distinguishes colors `9` and `10`, or is unnecessary because one of them is
 omitted. Hence one coordinate and the omitted color are known after ten
 rounds. The remaining nine positions form a permutation of nine known colors.
 
-#### Phase 2: four pipelined binary searches
+#### Phase 2: three pipelined binary searches
 
 The `k > n` routine `findNext` from the cited paper identifies one new open
 coordinate in at most `ceil(log2 10) = 4` black queries. Pad shorter calls to
@@ -167,62 +211,79 @@ An equality check `y(p) = q_j(p)` is therefore a guard:
 - if it is true, coordinate `p` is already identified;
 - if it is false, the coming `findNext` call cannot return `p`.
 
-Run three padded calls as follows. The first call identifies a coordinate. In
-its last extra check, guard a remaining coordinate `p` against the active
-index for the second call. If the guard is false, use three checks in the
-second call to test three more possible colors of `p`, then use its last check
-as the guard for the third call. Initially `p` has at most eight candidate
-colors, because the omitted color and the first identified color are already
-excluded. Two further checks in the third call therefore determine `p`.
-Any true answer only determines `p` earlier. In all cases, the three black
-searches and the equality checks identify at least four distinct coordinates
-in twelve rounds.
+Run three padded calls. The first identifies a coordinate. In its last extra
+check, guard a remaining coordinate `p` against the active index for the
+second call. Choose `p` so that the guarded color is still possible; at most
+two colors have been excluded and at least eight positions are available.
 
-At most five positions remain. In the last check of the third call, guard a
-new position against the active index for a fourth call. The guard plus three
-checks in that fourth call determine the guarded position among at most five
-colors, while `findNext` determines another distinct position. The fourth
-extra check starts resolving the at most three remaining positions.
+If the guard is false, use three checks in the second call on three more
+candidate colors for `p`. Its last check prepares the third call. The following
+convention prevents duplicated tests: if the next active color for `p` is
+still possible, test it as the guard; if it is already excluded, the guard is
+automatically false, so test a different remaining candidate instead. Either
+way the next `findNext` call cannot return `p` and one candidate is removed.
 
-Only one further round is needed. Let the last three positions be `p,q,r` and
-their colors be `a,b,c`, where the fourth call has already checked `y(p)=a`.
+After also excluding the colors identified by the black searches, `p` has at
+most three candidates entering the third call. Two checks determine it. Any
+true answer determines it earlier. Thus the three searches plus the equality
+checks identify at least four distinct new coordinates in twelve rounds.
+Together with the setup coordinate, five positions are known and at most five
+remain.
 
-- If that check was true, one equality check distinguishes the two possible
-  orders of `b,c`.
-- If it was false, use a legal query whose restriction to these positions is
-  `(a,b,c)`. The four possibilities are
+#### A three-round five-position endgame
 
-  ```text
-  (b,a,c), (b,c,a), (c,a,b), (c,b,a).
-  ```
+Relabel the remaining positions and colors by `0,...,4`. Query known positions
+correctly, so they contribute a fixed constant to every black answer. The
+following compact certificate solves the residual permutation in three rounds.
 
-  The first and fourth have one local black peg; the middle two have zero.
-  After seeing that count, the equality check `y(p)=b` distinguishes the two
-  members of the relevant pair. The known positions contribute the same
-  constant to every black count, so they do not affect the distinction.
+First query `01234`. If the black answer is zero, check `y(0)=1`; for answers
+one, two, or three, check `y(0)=0`; answer five is solved. In the table, an
+entry after the semicolon is
+`secondBlack : secondCheck ; thirdQuery(true), thirdQuery(false)`; `-` denotes
+an empty branch.
 
-The total is therefore
+| first answer/check | second query | continuation certificate |
+|---|---|---|
+| `0,T` | `01234` | `0:y(2)=3; 01243,03412` |
+| `0,F` | `02143` | `0:y(0)=2; 01324,03412`; `1:y(0)=2; 01342,31402`; `2:y(0)=0; -,03124`; `3:y(0)=0; -,01243` |
+| `1,T` | `01234` | `1:y(1)=2; 01243,01342` |
+| `1,F` | `10234` | `0:y(0)=2; 01243,01342`; `1:y(2)=2; 02314,23041`; `2:y(0)=1; 02134,02134`; `3:y(0)=0; -,01243` |
+| `2,T` | `01234` | `2:y(1)=1; 01234,12034` |
+| `2,F` | `01234` | `2:y(1)=1; 12034,02314` |
+| `3,T` | `01234` | `3:y(1)=1; 01243,01243` |
+| `3,F` | `01243` | every black fiber has size at most two |
+
+The verification uses cycle structure. Relative to `01234`, the possible
+black answers `0,1,2,3,5` are the fixed-point counts. Intersecting those cycle
+types with the displayed equality and second query gives precisely the table's
+response classes. For every displayed third query, each black fiber contains
+at most two permutations. If two remain, they differ at some coordinate, so
+the adaptive equality check in round three distinguishes them. This checks a
+small set of structural response classes, not 120 individual secrets.
+
+The total is
 
 ```text
-10 + 3 * 4 + 4 + 1 = 27.
+10 + 3 * 4 + 3 = 25.
 ```
 
-This proves `T+(10, 11) <= 27` without searching a game tree.
+Therefore `T+(10, 11) <= 25`.
 
 ## Lean scope
 
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](../../BlackPegExtraCheck/TenFieldsElevenColors.lean)
 kernel-checks the 39,916,800-secret cardinality, the 22-outcome transcript
-bound, the information bounds of five and six, and the structural
-derangement/fiber proof ruling out six-round strategies. The number of
-derangements is derived by its recurrence rather than by enumerating secrets.
+bound, the information bounds of five and six, the derangement argument, and
+the full response-fiber capacity proof ruling out legal seven-round strategies.
+The derangement count comes from its recurrence, while the black-fiber bound
+uses match-set injections rather than enumerating secrets.
 
-For the upper bound, Lean checks both the published 44-round arithmetic and
-the `10 + 3*4 + 4 + 1 = 27` hybrid allocation. The phase-1 modular identity,
-the pipelined use of `findNext`, and the full query construction are proved
-mathematically above but are not yet represented as an executable Lean game
-strategy. Accordingly, the Lean upper theorem takes the explicitly named
-premise `hybridStrategy`; there is no axiom or hidden placeholder.
+For the upper bound, Lean checks the published 44-round arithmetic and both
+hybrid allocations, including `10 + 3*4 + 3 = 25`. The phase-1 modular
+identity, the pipelined use of `findNext`, and the five-position certificate
+are proved mathematically above but are not yet represented as one executable
+Lean strategy. Accordingly, the Lean upper theorem takes the explicitly named
+premise `threeCallHybridStrategy`; there is no axiom or hidden placeholder.
 
 ## Primary source
 
