@@ -14,7 +14,7 @@ check. The requested bounds are
 The strengthened proofs below give
 
 ```text
-7 <= T+(10, 11) <= 28.
+7 <= T+(10, 11) <= 27.
 ```
 
 ## Lower bound
@@ -124,7 +124,7 @@ The extra-check game may ignore its additional Boolean answer and run exactly
 this classical strategy. Therefore `T+(10, 11) <= 44`, which immediately gives
 the originally requested `T+(10, 11) <= 45`.
 
-### Hybrid improvement to twenty-eight
+### Hybrid improvement to twenty-seven
 
 The extra checks can be integrated into the classical construction much more
 effectively.
@@ -184,15 +184,30 @@ checks in that fourth call determine the guarded position among at most five
 colors, while `findNext` determines another distinct position. The fourth
 extra check starts resolving the at most three remaining positions.
 
-At most two additional equality-check rounds finish those three positions:
-one more check fixes the partially tested position, and one check distinguishes
-the final two colors if necessary. The total is
+Only one further round is needed. Let the last three positions be `p,q,r` and
+their colors be `a,b,c`, where the fourth call has already checked `y(p)=a`.
+
+- If that check was true, one equality check distinguishes the two possible
+  orders of `b,c`.
+- If it was false, use a legal query whose restriction to these positions is
+  `(a,b,c)`. The four possibilities are
+
+  ```text
+  (b,a,c), (b,c,a), (c,a,b), (c,b,a).
+  ```
+
+  The first and fourth have one local black peg; the middle two have zero.
+  After seeing that count, the equality check `y(p)=b` distinguishes the two
+  members of the relevant pair. The known positions contribute the same
+  constant to every black count, so they do not affect the distinction.
+
+The total is therefore
 
 ```text
-10 + 3 * 4 + 4 + 2 = 28.
+10 + 3 * 4 + 4 + 1 = 27.
 ```
 
-This proves `T+(10, 11) <= 28` without searching a game tree.
+This proves `T+(10, 11) <= 27` without searching a game tree.
 
 ## Lean scope
 
@@ -203,7 +218,7 @@ derangement/fiber proof ruling out six-round strategies. The number of
 derangements is derived by its recurrence rather than by enumerating secrets.
 
 For the upper bound, Lean checks both the published 44-round arithmetic and
-the `10 + 3*4 + 4 + 2 = 28` hybrid allocation. The phase-1 modular identity,
+the `10 + 3*4 + 4 + 1 = 27` hybrid allocation. The phase-1 modular identity,
 the pipelined use of `findNext`, and the full query construction are proved
 mathematically above but are not yet represented as an executable Lean game
 strategy. Accordingly, the Lean upper theorem takes the explicitly named

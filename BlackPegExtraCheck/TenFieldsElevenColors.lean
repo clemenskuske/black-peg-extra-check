@@ -24,7 +24,7 @@ of every derangement of eleven colors. One equality check removes at most
 `10!` of these secrets, leaving too many for five further rounds.
 
 For the upper bound, the file records both the published 44-round classical
-bound and the 28-round cost of the hybrid protocol described in the proof
+bound and the 27-round cost of the hybrid protocol described in the proof
 notes. The latter pipelines the extra equality checks through the paper's
 four-round `findNext` routine.
 -/
@@ -322,19 +322,26 @@ theorem tenElevenUpperBoundFortyFive {TPlus : Nat}
 
 /--
 Ten cyclic setup rounds, four padded `findNext` calls of four rounds each, and
-two finishing rounds. The proof notes justify why the pipelined extra checks
+one finishing round. The proof notes justify why the pipelined extra checks
 reduce the open positions from nine to at most three during the four calls.
 -/
-def tenElevenHybridRoundBound : Nat := 10 + 3 * 4 + 4 + 2
+def tenElevenHybridRoundBound : Nat := 10 + 3 * 4 + 4 + 1
 
 @[simp] theorem tenElevenHybridRoundBound_eq :
-    tenElevenHybridRoundBound = 28 := by
+    tenElevenHybridRoundBound = 27 := by
   norm_num [tenElevenHybridRoundBound]
 
-/-- The hybrid protocol gives the improved upper bound `T⁺(10,11) ≤ 28`. -/
+/-- The hybrid protocol gives the improved upper bound `T⁺(10,11) ≤ 27`. -/
+theorem tenElevenUpperBoundTwentySeven {TPlus : Nat}
+    (hybridStrategy : TPlus ≤ tenElevenHybridRoundBound) :
+    TPlus ≤ 27 := by
+  simpa using hybridStrategy
+
+/-- A convenient weaker corollary retained for comparison with the first schedule. -/
 theorem tenElevenUpperBoundTwentyEight {TPlus : Nat}
     (hybridStrategy : TPlus ≤ tenElevenHybridRoundBound) :
     TPlus ≤ 28 := by
-  simpa using hybridStrategy
+  have stronger := tenElevenUpperBoundTwentySeven hybridStrategy
+  omega
 
 end BlackPegExtraCheck
