@@ -5,7 +5,9 @@ Authors: Clemens Kuske, OpenAI Codex
 -/
 import BlackPegExtraCheck.DecisionTree
 import Mathlib.Data.Fintype.CardEmbedding
-import Mathlib.Tactic
+import Mathlib.Tactic.IntervalCases
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Omega
 
 /-!
 # Ten fields and eleven colors
