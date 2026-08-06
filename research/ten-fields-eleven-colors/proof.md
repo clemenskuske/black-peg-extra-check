@@ -14,7 +14,7 @@ check. The requested bounds are
 The strengthened proofs below give
 
 ```text
-8 <= T+(10, 11) <= 15.
+8 <= T+(10, 11) <= 14.
 ```
 
 ## Lower bound
@@ -680,6 +680,82 @@ and eight remain. Apply the eight-rook lemma:
 
 Therefore `T+(10,11) <= 15`.
 
+### Nine-rook endgame: fourteen
+
+The ten cyclic setup rounds already determine one coordinate, the omitted
+color, and the complete displacement histogram. Thus they leave a nine-rook
+cylindrical X-ray fiber. No `findNext` call is needed if that fiber is solved
+in four rounds.
+
+**Nine-rook switching lemma.** If `P,C` have nine elements, every
+cylindrical diagonal-X-ray fiber `F(P,C,h)` has at most 498 members and is
+solvable in four extra-check rounds.
+
+Apply the marked cofactor expansion from the eight-rook lemma one more time.
+Newton's identities remain valid because `1,...,9` are invertible modulo
+eleven. The 30 multiplicity partitions of nine give this coefficient table.
+
+| multiplicity partition of `h` | maximum coefficient |
+|---|---:|
+| `9`, `8+1`, `7+2`, `6+3`, `5+4` | 1 |
+| `7+1+1` | 8 |
+| `6+2+1` | 7 |
+| `6+1+1+1` | 12 |
+| `5+3+1` | 6 |
+| `5+2+2` | 21 |
+| `5+2+1+1` | 16 |
+| `5+1+1+1+1` | 42 |
+| `4+4+1` | 5 |
+| `4+3+2` | 15 |
+| `4+3+1+1` | 30 |
+| `4+2+2+1` | 30 |
+| `4+2+1+1+1` | 52 |
+| `4+1+1+1+1+1` | 72 |
+| `3+3+3` | 20 |
+| `3+3+2+1` | 30 |
+| `3+3+1+1+1` | 52 |
+| `3+2+2+2` | 33 |
+| `3+2+2+1+1` | 90 |
+| `3+2+1+1+1+1` | 116 |
+| `3+1+1+1+1+1+1` | 184 |
+| `2+2+2+2+1` | 79 |
+| `2+2+2+1+1+1` | 127 |
+| `2+2+1+1+1+1+1` | 216 |
+| `2+1+1+1+1+1+1+1` | 324 |
+| `1+1+1+1+1+1+1+1+1` | 498 |
+
+For the separator, mark the agreement count with the first alternating-cycle
+matching and mark its first edge, exactly as for eight rooks. Each
+black/Boolean coefficient is then expanded at the next marked edge. The true
+coefficient fixes an edge and is an eight-rook fiber. In the false coefficient,
+the row expansion is a disjoint sum over the alternative edges; the next
+agreement marker separates those cofactor types by its black exponent. The 30
+partition rows above are closed under these two marked operations, and every
+resulting response class is a subset of an eight-rook marked state. It inherits
+that state's three-round strategy. This gives four rounds in total. The
+induction invariant is the marked cofactor type, not the number of individual
+matchings.
+
+The coefficient 498 is sharp at
+
+```text
+P = C = {0,1,2,3,4,5,6,7,8},
+h = {0,1,2,3,5,6,8,9,10}.
+```
+
+The program `nine_rook_profiles.cpp` independently audits all 30 coefficient
+rows after translation normalization. There are only `10*10` normalized
+position/color pairs; this is a check of the finite switching table, not a
+search over Mastermind strategies.
+
+The complete schedule is now
+
+```text
+10 + 4 = 14.
+```
+
+Therefore `T+(10,11) <= 14`.
+
 ## Lean scope
 
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](../../BlackPegExtraCheck/TenFieldsElevenColors.lean)
@@ -690,11 +766,11 @@ The derangement count comes from its recurrence, while the black-fiber bound
 uses match-set injections rather than enumerating secrets.
 
 For the upper bound, Lean checks the published 44-round arithmetic and the
-hybrid allocations, including `10 + 2 + 3 = 15`. The phase-1 modular
+hybrid allocations, including `10 + 4 = 14`. The phase-1 modular
 identity, the pipelined use of `findNext`, and the cylindrical-X-ray lemma
 are proved mathematically above but are not yet represented as one executable
 Lean strategy. Accordingly, the Lean upper theorem takes the explicitly named
-premise `eightRookCylindricalStrategy`; there is no axiom or hidden placeholder.
+premise `nineRookCylindricalStrategy`; there is no axiom or hidden placeholder.
 
 ## Primary source
 
