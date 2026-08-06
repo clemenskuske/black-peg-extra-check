@@ -26,10 +26,10 @@ Boolean predicate, six rounds distinguish at most `10,676,379` candidates,
 fewer than the zero/false branch left after round one.
 
 For the upper bound, the file records the published 44-round classical bound
-and successively shorter hybrid protocols. The final 16-round allocation in
-the proof notes augments each balanced `findNext` comparison with its adaptive
-equality check. Two calls then cost two rounds each, followed by a two-round
-cylindrical-X-ray endgame on the seven remaining positions.
+and successively shorter hybrid protocols. The 16-round allocation in the
+proof notes augments each balanced `findNext` comparison with its adaptive
+equality check. The final 15-round allocation uses one such two-round call,
+followed by a three-round cylindrical-X-ray endgame on eight positions.
 -/
 
 namespace BlackPegExtraCheck
@@ -764,5 +764,24 @@ theorem tenElevenUpperBoundSixteen {TPlus : Nat}
       TPlus ≤ tenElevenSevenRookRoundBound) :
     TPlus ≤ 16 := by
   simpa using sevenRookCylindricalStrategy
+
+/-! ## Eight-position cylindrical-X-ray endgame -/
+
+/--
+Ten setup rounds, one two-round equality-accelerated `findNext` call, and the
+three-round eight-position cylindrical-X-ray endgame.
+-/
+def tenElevenEightRookRoundBound : Nat := 10 + 2 + 3
+
+@[simp] theorem tenElevenEightRookRoundBound_eq :
+    tenElevenEightRookRoundBound = 15 := by
+  norm_num [tenElevenEightRookRoundBound]
+
+/-- The eight-rook cylindrical-X-ray protocol gives `T⁺(10,11) ≤ 15`. -/
+theorem tenElevenUpperBoundFifteen {TPlus : Nat}
+    (eightRookCylindricalStrategy :
+      TPlus ≤ tenElevenEightRookRoundBound) :
+    TPlus ≤ 15 := by
+  simpa using eightRookCylindricalStrategy
 
 end BlackPegExtraCheck

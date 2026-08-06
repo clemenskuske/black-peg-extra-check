@@ -14,7 +14,7 @@ check. The requested bounds are
 The strengthened proofs below give
 
 ```text
-8 <= T+(10, 11) <= 16.
+8 <= T+(10, 11) <= 15.
 ```
 
 ## Lower bound
@@ -597,6 +597,89 @@ known and seven remain.  Apply the seven-rook lemma to finish in two rounds:
 
 Therefore `T+(10,11) <= 16`.
 
+### Eight-rook endgame: fifteen
+
+The cofactor argument admits one more step, although the endgame now needs
+three rounds rather than two.
+
+**Eight-rook switching lemma.** If `P,C` have eight elements, every
+cylindrical diagonal-X-ray fiber `F(P,C,h)` has at most 86 members and is
+solvable in three extra-check rounds.
+
+The coefficient bound again comes from the permanent polynomial and recurrence
+(3). There are only the 22 multiplicity partitions of eight. Expanding a
+cofactor and equating the first eight power sums of the two diagonal
+multisets gives the following table.
+
+| multiplicity partition of `h` | maximum coefficient |
+|---|---:|
+| `8`, `7+1`, `6+2`, `5+3`, `4+4` | 1 |
+| `6+1+1` | 7 |
+| `5+2+1` | 6 |
+| `5+1+1+1` | 10 |
+| `4+3+1` | 5 |
+| `4+2+2` | 15 |
+| `4+2+1+1` | 13 |
+| `4+1+1+1+1` | 30 |
+| `3+3+2` | 10 |
+| `3+3+1+1` | 20 |
+| `3+2+2+1` | 18 |
+| `3+2+1+1+1` | 32 |
+| `3+1+1+1+1+1` | 40 |
+| `2+2+2+2` | 21 |
+| `2+2+2+1+1` | 48 |
+| `2+2+1+1+1+1` | 50 |
+| `2+1+1+1+1+1+1` | 84 |
+| `1+1+1+1+1+1+1+1` | 86 |
+
+Here is the separator part of the same calculation. Mark a reference
+matching by a variable `u`, and mark one edge in the first nontrivial
+alternating cycle by `v`. In the cofactor expansion, the coefficient of
+`u^b v^e` is exactly the candidate class after black answer `b` and Boolean
+edge answer `e`. Expand each such marked coefficient once more, using the
+seven-rook separator table in the true cofactor and the next alternating cycle
+in the false cofactor. For each of the 22 rows above, the second marked
+expansion has black classes of size at most two. The third round's adaptive
+equality check distinguishes that possible pair. Thus the coefficient bound
+and the three-round separator follow from the same 22-row switching
+calculation; there is no game tree over `8!` secrets.
+
+Newton's identities justify the power-sum step: they recover a multiset of
+eight elements from its first eight power sums over `Z/11Z`, since
+`1,...,8` are invertible modulo eleven. Translation of `P` and `C` merely
+relabels all diagonal variables, so it introduces no additional cases.
+
+The bound 86 is sharp. For
+
+```text
+P = {0,1,2,3,4,5,6,7},
+C = {0,1,2,3,4,6,7,9},
+h = {0,1,2,4,6,7,8,9},
+```
+
+the fiber has 86 matchings. The first query `42076913` has black-class sizes
+
+```text
+23, 22, 22, 12, 6, 1.
+```
+
+Testing the edge `f(0)=0` splits all six classes into two-round states; their
+largest false children have sizes `22,19,17,11,5,1`. This is the sharp row's
+marked-cofactor certificate. The reproducible audit programs
+`eight_rook_profiles.cpp` and `eight_rook_certificate.py` compute the table
+and check this certificate, but the proof is the cofactor/power-sum reduction
+above rather than an exhaustive Mastermind decision tree.
+
+After the cyclic setup, one accelerated search takes two rounds and fixes one
+new coordinate. Together with the setup coordinate, two positions are known
+and eight remain. Apply the eight-rook lemma:
+
+```text
+10 + 2 + 3 = 15.
+```
+
+Therefore `T+(10,11) <= 15`.
+
 ## Lean scope
 
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](../../BlackPegExtraCheck/TenFieldsElevenColors.lean)
@@ -607,11 +690,11 @@ The derangement count comes from its recurrence, while the black-fiber bound
 uses match-set injections rather than enumerating secrets.
 
 For the upper bound, Lean checks the published 44-round arithmetic and the
-hybrid allocations, including `10 + 2*2 + 2 = 16`. The phase-1 modular
+hybrid allocations, including `10 + 2 + 3 = 15`. The phase-1 modular
 identity, the pipelined use of `findNext`, and the cylindrical-X-ray lemma
 are proved mathematically above but are not yet represented as one executable
 Lean strategy. Accordingly, the Lean upper theorem takes the explicitly named
-premise `sevenRookCylindricalStrategy`; there is no axiom or hidden placeholder.
+premise `eightRookCylindricalStrategy`; there is no axiom or hidden placeholder.
 
 ## Primary source
 

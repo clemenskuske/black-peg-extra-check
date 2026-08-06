@@ -28,7 +28,7 @@ The fixed AB-Mastermind case with ten fields and eleven non-repeating colors is
 developed in
 [`research/ten-fields-eleven-colors/proof.md`](research/ten-fields-eleven-colors/proof.md).
 It proves the requested bounds `5 <= T+(10, 11) <= 45` and then strengthens
-them structurally to `8 <= T+(10, 11) <= 16`, without enumerating the game
+them structurally to `8 <= T+(10, 11) <= 15`, without enumerating the game
 tree. The corresponding Lean lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean).
 
