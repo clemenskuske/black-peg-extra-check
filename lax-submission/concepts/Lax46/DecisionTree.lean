@@ -3,6 +3,7 @@ import Mathlib.Data.Fintype.Perm
 /-!
 ---
 title: Decision-tree lower bound for permutation Mastermind with an extra check
+type: theorem
 ---
 A secret is a permutation of `n` positions.  A round returns a black-peg count
 in `{0, ..., n}` and one Boolean answer, so a padded transcript of `r` rounds

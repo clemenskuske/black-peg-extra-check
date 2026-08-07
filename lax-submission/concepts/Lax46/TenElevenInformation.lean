@@ -4,6 +4,7 @@ import Mathlib.Data.Fintype.CardEmbedding
 /-!
 ---
 title: Six-round information lower bound for ten fields and eleven colors
+type: theorem
 ---
 In the ten-field, eleven-color game, a secret is an injective assignment of a
 color to every field.  A round has eleven possible black-peg counts and one
