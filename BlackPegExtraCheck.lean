@@ -1,2 +1,4 @@
 import BlackPegExtraCheck.DecisionTree
 import BlackPegExtraCheck.TenFieldsElevenColors
+import BlackPegExtraCheck.FiveZeroBridge
+import BlackPegExtraCheck.Separator

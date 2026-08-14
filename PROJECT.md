@@ -34,8 +34,21 @@ premise. A proposed 14-round cyclic/X-ray allocation is also recorded, but its
 Lean theorem is conditional on a missing endgame strategy and is not an
 executable or closed upper-bound proof. The current audit isolates both that
 gap and a kernel-checked reduction of a possible ninth-round lower bound to a
-five-fiber intersection inequality. The corresponding Lean lemmas are in
-[`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean).
+five-fiber intersection inequality. It now also formalizes the safe
+perfect-matching bridge, the necessary five-factor cut inequality, the
+six-regular small-defect reduction, and an explicit degree-one obstruction
+showing that a five-factor cannot simply be assumed. The corresponding Lean
+lemmas are in
+[`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean)
+and
+[`BlackPegExtraCheck/FiveZeroBridge.lean`](BlackPegExtraCheck/FiveZeroBridge.lean).
+
+The exact recursive legal separator predicate and a sound executable finite
+certificate checker are in
+[`BlackPegExtraCheck/Separator.lean`](BlackPegExtraCheck/Separator.lean).
+They are infrastructure for the missing eight- and nine-rook endgames; no
+universal separator certificate is currently supplied, so they do not close a
+new numerical upper bound by themselves.
 
 ## Verification
 

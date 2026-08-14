@@ -238,15 +238,85 @@ assumption that the desired lower bound already holds. The response-eight and
 response-nine caps, the value `S_3 = 6370`, and the reduction from an arbitrary
 legal eight-round tree are all kernel-checked.
 
-A useful reformulation of the missing step completes each injection to a
-permutation of eleven colors. It is enough to show that after forbidding five
-permutation matrices and five additional edges, more than 6,370 perfect
-matchings remain. When the five matrices are edge-disjoint, their complement
-is six-regular; Schrijver's permanent bound gives more than 16,000 matchings
-before the five extra edge deletions. What is still needed is a robust
-finite-size bound after those deletions, together with an equally clean
-treatment of overlapping query matrices. Consequently (5) and the nine-round
-lower bound remain open.
+A useful reformulation of the missing step completes each injection to its
+unique permutation of eleven colors. Restriction back to the first ten rows is
+injective. Hence every perfect matching that avoids the five completed query
+permutations and the five checked edges gives a distinct member of `Z_5`.
+Lean now checks this map in
+`card_completedFivePathPerfectMatchings_le_fiveZeroFalse`, and
+`tenElevenLowerBoundNine_of_completedPermanent_large` proves the resulting
+safe reduction: a universal completed-permanent lower bound greater than
+6,370 would imply `T+(10,11) >= 9`.
+
+#### Five-factors and the exceptional cuts
+
+If the completed avoidance graph `H` contains a five-regular spanning
+subgraph `R`, the standard doubly-stochastic permanent inequality gives
+
+```text
+per(H) >= per(R) >= 5^11 * 11! / 11^11
+                    = 6831.345...,
+```
+
+so its integer permanent is at least 6,832. Lean checks the injection,
+monotonicity, and integer arithmetic. Because the permanent inequality itself
+is not in Mathlib, `card_fiveZeroFalse_large_of_fiveRegular` takes its exact
+cross-multiplied form as a named premise; it is not an axiom or a closed use of
+an unavailable theorem.
+
+For a bipartite relation on eleven vertices per side define
+
+```text
+e_H(X,Y) = number of allowed edges in X times Y.
+```
+
+Lean proves the necessary five-factor inequality
+
+```text
+e_H(X,Y) >= 5 * (|X| + |Y| - 11).                       (6)
+```
+
+It also proves the promised defect arithmetic in the edge-disjoint regular
+case. Let `G` be six-regular and delete at most five allowed checked edges. If
+the remaining relation violates (6), put
+`s = |X| + |Y| - 11` for a violating cut. Six-regularity gives
+`e_G(X,Y) >= 6s`; integrality and the strict violation force at least `s+1`
+deleted edges into `X times Y`. Since only five edges were deleted,
+
+```text
+s in {1,2,3,4}.
+```
+
+The sufficient direction of the exact bipartite five-factor criterion is not
+yet formalized. The theorem deriving a defect from *nonexistence* of a
+five-factor therefore receives that sufficient direction as an explicit
+argument. Moreover, overlapping completed queries do not automatically give
+a six-regular base, so the regular defect theorem is deliberately not stated
+as a global path theorem.
+
+There is a genuine obstruction to simply asserting a five-factor. Five legal
+completed queries and five legal checks are now exhibited in Lean for which
+color 4 has degree exactly one. Therefore no five-regular spanning
+subrelation exists. Lean also checks an explicit surviving perfect matching,
+so this is a consistent nonempty zero/false state. The audit program
+`five_zero_survivor_probe.py` counts the corresponding ten-row survivor state
+by a `2^11` subset DP:
+
+```text
+ten-row survivor count:          10404
+completed perfect-matchings:     10404
+completed degree of color 4:         1
+```
+
+The Lean theorem checks the degree-one/no-five-factor certificate; the number
+10,404 is a reproducible discovery computation, not a kernel theorem and not
+a claimed global minimum. An exhaustive single-move neighborhood audit found
+no smaller adjacent configuration (`five_zero_survivor_probe.py --neighbors`),
+but that is likewise not a proof of the universal inequality. Thus neither
+this obstruction nor the computation is a
+counterexample to (5). The exact remaining lower-bound bottleneck is still a
+proof (or a real counterexample) of the universal `|Z_5| > 6370` statement,
+including the exceptional defect patterns and overlapping queries.
 
 ## Upper bound
 
@@ -851,6 +921,33 @@ In particular, the inequality `498 < 20^3` and the coefficient table do not by
 themselves supply the missing strategy. No closed 13-round protocol was
 obtained.
 
+### Exact separator and certificate infrastructure
+
+The Lean file `BlackPegExtraCheck/Separator.lean` now defines the legal
+recursive predicate requested for endgame certificates:
+
+```text
+Sep_0(S)       iff |S| <= 1,
+Sep_(d+1)(S)   iff there is a legal query q such that, for every black
+                 response b, there is a legal checked edge e for which both
+                 Boolean children satisfy Sep_d.
+```
+
+The quantifier order permits the edge to depend on the black response. Lean
+proves that `Sep_d(S)` is equivalent to existence of the existing fully legal
+adaptive strategy tree of depth `d`. A finite `SeparatorCertificate` stores a
+legal query, a checked edge per black class, Boolean child references, and a
+named singleton at each leaf. Its executable Boolean checker is sound for
+`Sep`, and both `Sep` and certificate validity are monotone under taking
+subsets of a state.
+
+No all-fiber certificate has yet been checked. In particular, the new checker
+does not by itself prove that every eight-rook fiber has `Sep_3`, or that every
+nine-rook fiber has `Sep_4` or `Sep_3`. Symmetry normalization and a compact
+certificate covering every normalized fiber remain implementation
+bottlenecks. Therefore the closed upper bound remains the externally premised
+classical 44-round result, and 14 remains only the conditional allocation.
+
 ## Lean scope
 
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](../../BlackPegExtraCheck/TenFieldsElevenColors.lean)
@@ -862,7 +959,11 @@ uses match-set injections rather than enumerating secrets.
 
 For the lower bound, Lean now also checks the high-response fiber refinements,
 the three-round capacity `6370`, and the reduction of a nine-round lower bound
-to the five-zero/false intersection inequality (5).
+to the five-zero/false intersection inequality (5). The new perfect-matching
+file additionally checks completion/restriction, injection into the survivor
+state, five-factor necessity, permanent-threshold arithmetic, the
+six-regular defect reduction, and the explicit degree-one obstruction. It
+does not prove the universal inequality (5).
 
 For the upper bound, Lean checks only the published 44-round arithmetic and
 the arithmetic of the shorter allocations, including `10 + 4 = 14`. The
@@ -871,6 +972,10 @@ separators are not represented as one executable Lean strategy. Accordingly,
 the Lean upper theorem takes the explicitly named premise
 `nineRookCylindricalStrategy`; there is no axiom or hidden placeholder, but
 there is also no closed theorem constructing that strategy.
+
+The separator file is exact and executable, but currently contains checker
+infrastructure rather than an all-fiber certificate. It changes no numerical
+upper bound.
 
 ## Primary sources
 
