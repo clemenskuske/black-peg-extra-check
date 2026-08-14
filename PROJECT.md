@@ -27,9 +27,14 @@ The full argument, scope, and literature check are in
 The fixed AB-Mastermind case with ten fields and eleven non-repeating colors is
 developed in
 [`research/ten-fields-eleven-colors/proof.md`](research/ten-fields-eleven-colors/proof.md).
-It proves the requested bounds `5 <= T+(10, 11) <= 45` and then strengthens
-them structurally to `8 <= T+(10, 11) <= 14`, without enumerating the game
-tree. The corresponding Lean lemmas are in
+The lower bound `T+(10, 11) >= 8` is a closed Lean theorem. The file also
+derives the source-backed classical upper bound `T+(10,11) <= 44` by ignoring
+the extra answer; Lean records that external construction as an explicit
+premise. A proposed 14-round cyclic/X-ray allocation is also recorded, but its
+Lean theorem is conditional on a missing endgame strategy and is not an
+executable or closed upper-bound proof. The current audit isolates both that
+gap and a kernel-checked reduction of a possible ninth-round lower bound to a
+five-fiber intersection inequality. The corresponding Lean lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean).
 
 ## Verification
@@ -48,6 +53,6 @@ remain untracked.
 
 The extra-check variant does not appear in the primary sources surveyed. No
 proof closing the current `Omega(n)` versus `O(n log n)` gap was found. This
-repository deliberately separates the kernel-checked lower bound from open
-research directions rather than presenting a conjectural improvement as a
-theorem.
+repository deliberately separates kernel-checked results, conditional
+reductions, and open research directions rather than presenting a conjectural
+improvement as a theorem.

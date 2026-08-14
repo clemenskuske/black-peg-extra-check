@@ -11,11 +11,18 @@ check. The requested bounds are
 5 <= T+(10, 11) <= 45.
 ```
 
-The strengthened proofs below give
+The closed lower-bound development gives
 
 ```text
-8 <= T+(10, 11) <= 14.
+8 <= T+(10, 11).
 ```
+
+The cited classical construction gives the rigorous mathematical upper bound
+`T+(10,11) <= 44` by ignoring the extra answer; its Lean theorem imports that
+external construction as a premise. The later cyclic/X-ray discussion proposes
+`T+(10,11) <= 14`, but the corresponding allocation theorem assumes the
+missing nine-rook strategy. The audit below explains why 14 is conditional
+rather than a closed upper bound.
 
 ## Lower bound
 
@@ -174,6 +181,72 @@ seven-round value `28,301,850`, however.  Proving nine therefore needs a
 state-dependent adversary or a structural restriction on intersections of
 successive black fibers; another one-dimensional capacity recurrence cannot
 do it.  No nine-round lower bound is claimed here.
+
+### Five zero/false responses: a checked reduction toward nine
+
+There is a more promising state-dependent route that does not collapse the
+history to one scalar capacity. First sharpen only the high black fibers that
+matter to a three-round continuation.
+
+If a query and a secret have nine matches, the unique nonmatching position
+must contain the unique color omitted by the query. Hence the response-nine
+fiber has at most ten secrets, one for each possible nonmatching position.
+For response eight, each chosen eight-element match set has at most six
+extensions in the old bound. The query itself and the two injections obtained
+by replacing either remaining entry with the query's omitted color are three
+distinct extensions with additional matches, so exactness leaves at most
+three. This gives `choose(10,8) * 3 = 135`. Combining these refinements with
+the existing match-set caps gives the relaxed short-horizon recurrence
+
+```text
+S_0 = 1,
+S_(r+1) = sum_b min(shortCap_b, 2*S_r),
+shortCap_9 = 10,
+shortCap_8 = 135,
+shortCap_b = choose(10,b) * (11-b)! otherwise.
+```
+
+Its first values are
+
+```text
+S_0 =    1
+S_1 =   21
+S_2 =  389
+S_3 = 6370.
+```
+
+Thus no three-round continuation, even with arbitrary Boolean predicates in
+place of legal equality checks, can solve 6,371 candidates.
+
+Now follow the all-zero/all-false path for the first five rounds of an alleged
+eight-round strategy. Along that path the five guesses and five tested edges
+are fixed, although they were selected adaptively before the path was known.
+Let `Z_5` be the set of injections avoiding every guess edge and every tested
+edge. If
+
+```text
+|Z_5| > 6370                                                    (5)
+```
+
+for every such five-query path, the remaining three rounds cannot solve
+`Z_5`, and `T+(10,11) >= 9` follows.
+
+The Lean theorem
+`tenElevenLowerBoundNine_of_fiveZeroFalse_large` proves exactly this
+reduction. Its premise is the concrete intersection inequality (5), not an
+assumption that the desired lower bound already holds. The response-eight and
+response-nine caps, the value `S_3 = 6370`, and the reduction from an arbitrary
+legal eight-round tree are all kernel-checked.
+
+A useful reformulation of the missing step completes each injection to a
+permutation of eleven colors. It is enough to show that after forbidding five
+permutation matrices and five additional edges, more than 6,370 perfect
+matchings remain. When the five matrices are edge-disjoint, their complement
+is six-regular; Schrijver's permanent bound gives more than 16,000 matchings
+before the five extra edge deletions. What is still needed is a robust
+finite-size bound after those deletions, together with an equally clean
+treatment of overlapping query matrices. Consequently (5) and the nine-round
+lower bound remain open.
 
 ## Upper bound
 
@@ -680,7 +753,7 @@ and eight remain. Apply the eight-rook lemma:
 
 Therefore `T+(10,11) <= 15`.
 
-### Nine-rook endgame: fourteen
+### Nine-rook endgame: conditional fourteen-round allocation
 
 The ten cyclic setup rounds already determine one coordinate, the omitted
 color, and the complete displacement histogram. Thus they leave a nine-rook
@@ -754,7 +827,29 @@ The complete schedule is now
 10 + 4 = 14.
 ```
 
-Therefore `T+(10,11) <= 14`.
+Subject to the nine-rook switching lemma, this allocation would give
+`T+(10,11) <= 14`.
+
+### Audit of the cyclic/X-ray upper bound
+
+The ten-query cyclic setup identities are consistent: the eleven black counts
+sum to ten, their weighted sum determines the omitted color modulo eleven,
+and the ten equality checks can identify one coordinate. The supplied profile
+programs also reproduce the stated maximum X-ray fiber sizes, including the
+498-member nine-rook fiber.
+
+They do **not**, however, verify the adaptive separator asserted by the
+nine-rook switching lemma. `nine_rook_profiles.cpp` counts coefficients only;
+it contains no strategy search or marked-cofactor check. Likewise, the prose
+claim that all 30 multiplicity rows are closed under the two marked operations
+does not display those marked rows or a map from every child to an already
+solved eight-rook state. A coefficient bound alone does not imply a
+four-round legal strategy. The same distinction applies to a sought
+three-round endgame for a 13-round total.
+
+In particular, the inequality `498 < 20^3` and the coefficient table do not by
+themselves supply the missing strategy. No closed 13-round protocol was
+obtained.
 
 ## Lean scope
 
@@ -765,14 +860,19 @@ the full response-fiber capacity proof ruling out legal seven-round strategies.
 The derangement count comes from its recurrence, while the black-fiber bound
 uses match-set injections rather than enumerating secrets.
 
-For the upper bound, Lean checks the published 44-round arithmetic and the
-hybrid allocations, including `10 + 4 = 14`. The phase-1 modular
-identity, the pipelined use of `findNext`, and the cylindrical-X-ray lemma
-are proved mathematically above but are not yet represented as one executable
-Lean strategy. Accordingly, the Lean upper theorem takes the explicitly named
-premise `nineRookCylindricalStrategy`; there is no axiom or hidden placeholder.
+For the lower bound, Lean now also checks the high-response fiber refinements,
+the three-round capacity `6370`, and the reduction of a nine-round lower bound
+to the five-zero/false intersection inequality (5).
 
-## Primary source
+For the upper bound, Lean checks only the published 44-round arithmetic and
+the arithmetic of the shorter allocations, including `10 + 4 = 14`. The
+phase-1 modular identity, the `findNext` variants, and the cylindrical-X-ray
+separators are not represented as one executable Lean strategy. Accordingly,
+the Lean upper theorem takes the explicitly named premise
+`nineRookCylindricalStrategy`; there is no axiom or hidden placeholder, but
+there is also no closed theorem constructing that strategy.
+
+## Primary sources
 
 - M. El Ouali, C. Glazik, V. Sauerland, and A. Srivastav,
   [On the Query Complexity of Black-Peg AB-Mastermind](https://arxiv.org/abs/1611.05907),
@@ -781,3 +881,6 @@ premise `nineRookCylindricalStrategy`; there is no axiom or hidden placeholder.
   [On the X-rays of permutations](https://arxiv.org/abs/math/0506334),
   for the diagonal-X-ray/displacement-multiset viewpoint and the planar
   five- and six-rook degeneracies.
+- A. Schrijver,
+  [Counting 1-factors in regular bipartite graphs](https://doi.org/10.1006/jctb.1997.1798),
+  for the permanent lower bound used in the five-fiber discussion.

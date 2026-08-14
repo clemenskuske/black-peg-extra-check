@@ -25,11 +25,10 @@ recurrence then proves eight: even if every later extra check were an arbitrary
 Boolean predicate, six rounds distinguish at most `10,676,379` candidates,
 fewer than the zero/false branch left after round one.
 
-For the upper bound, the file records the published 44-round classical bound
-and successively shorter hybrid protocols. Equality-accelerated `findNext`
-and small cylindrical-X-ray endgames give 16 and then 15 rounds. The final
-14-round allocation uses the ten-round cyclic setup followed directly by a
-four-round endgame on the nine remaining positions.
+For the upper bound, the file records conditional arithmetic for the published
+44-round classical bound and successively shorter proposed hybrid protocols.
+In particular, the final 14-round theorem assumes the named nine-rook strategy;
+this file does not construct an executable upper strategy.
 -/
 
 namespace BlackPegExtraCheck
@@ -438,6 +437,348 @@ theorem card_tenElevenBlackFiber_upper (guess : TenElevenSecret) (b : Fin 11) :
     exact congrArg Fin.val (Finset.mem_filter.1 hsecret).2
   exact (Finset.card_le_card subset).trans (card_blackFiberFinset_upper guess b.1)
 
+/-! ### Sharper high-response fiber bounds -/
+
+/--
+There is only one color outside the range of a ten-color guess.  Consequently,
+any two colors that both avoid every entry of the guess are equal.
+-/
+theorem color_eq_of_avoids_guess (guess : TenElevenSecret) {c d : Fin 11}
+    (hc : ∀ i, c ≠ guess i) (hd : ∀ i, d ≠ guess i) : c = d := by
+  have hc_last : (guessRelabeling guess).symm c = Fin.last 10 := by
+    generalize hx : (guessRelabeling guess).symm c = x
+    induction x using Fin.lastCases with
+    | last => rfl
+    | cast i =>
+        exfalso
+        apply hc i
+        have relabeled := congrArg (guessRelabeling guess) hx
+        simpa using relabeled
+  have hd_last : (guessRelabeling guess).symm d = Fin.last 10 := by
+    generalize hx : (guessRelabeling guess).symm d = x
+    induction x using Fin.lastCases with
+    | last => rfl
+    | cast i =>
+        exfalso
+        apply hd i
+        have relabeled := congrArg (guessRelabeling guess) hx
+        simpa using relabeled
+  exact (guessRelabeling guess).symm.injective (hc_last.trans hd_last.symm)
+
+/-- The unique color omitted by a ten-color injection. -/
+noncomputable def omittedColor (guess : TenElevenSecret) : Fin 11 :=
+  guessRelabeling guess (Fin.last 10)
+
+theorem omittedColor_ne_guess (guess : TenElevenSecret) (i : Fin 10) :
+    omittedColor guess ≠ guess i := by
+  rw [omittedColor, ← guessRelabeling_apply guess i]
+  intro equal
+  exact Fin.castSucc_ne_last i ((guessRelabeling guess).injective equal).symm
+
+/-- Replace one entry of a guess by its omitted color. -/
+noncomputable def replaceWithOmitted (guess : TenElevenSecret) (i : Fin 10) :
+    TenElevenSecret where
+  toFun j := if j = i then omittedColor guess else guess j
+  inj' := by
+    intro a b equal
+    by_cases hai : a = i
+    · subst a
+      by_cases hbi : b = i
+      · exact hbi.symm
+      · exfalso
+        have collision : omittedColor guess = guess b := by
+          simpa [hbi] using equal
+        exact omittedColor_ne_guess guess b collision
+    · by_cases hbi : b = i
+      · subst b
+        exfalso
+        have collision : guess a = omittedColor guess := by
+          simpa [hai] using equal
+        exact omittedColor_ne_guess guess a collision.symm
+      · exact guess.injective (by simpa [hai, hbi] using equal)
+
+@[simp] theorem replaceWithOmitted_apply_same (guess : TenElevenSecret)
+    (i : Fin 10) : replaceWithOmitted guess i i = omittedColor guess := by
+  change (if i = i then omittedColor guess else guess i) = omittedColor guess
+  simp
+
+@[simp] theorem replaceWithOmitted_apply_ne (guess : TenElevenSecret)
+    {i j : Fin 10} (hji : j ≠ i) :
+    replaceWithOmitted guess i j = guess j := by
+  change (if j = i then omittedColor guess else guess j) = guess j
+  rw [if_neg hji]
+
+theorem replaceWithOmitted_ne_guess (guess : TenElevenSecret) (i : Fin 10) :
+    replaceWithOmitted guess i ≠ guess := by
+  intro equal
+  have at_i := congrArg (fun secret : TenElevenSecret => secret i) equal
+  exact omittedColor_ne_guess guess i (by simpa using at_i)
+
+theorem replaceWithOmitted_injective (guess : TenElevenSecret) :
+    Function.Injective (replaceWithOmitted guess) := by
+  intro i j equal
+  by_contra hij
+  have at_i := congrArg (fun secret : TenElevenSecret => secret i) equal
+  have collision : omittedColor guess = guess i := by
+    simpa [hij] using at_i
+  exact omittedColor_ne_guess guess i collision
+
+@[simp] theorem matchSet_replaceWithOmitted (guess : TenElevenSecret)
+    (i : Fin 10) :
+    MatchSet guess (replaceWithOmitted guess i) = Finset.univ.erase i := by
+  ext j
+  by_cases hji : j = i
+  · subst j
+    simp [MatchSet, omittedColor_ne_guess]
+  · simp [MatchSet, hji]
+
+/--
+Secrets whose unique nonmatch against `guess` is at `i`.  Nine matches force
+the remaining entry to be the unique color omitted by `guess`.
+-/
+noncomputable def NineMatchFinset (guess : TenElevenSecret) (i : Fin 10) :
+    Finset TenElevenSecret :=
+  Finset.univ.filter fun secret =>
+    secret i ≠ guess i ∧ ∀ j, j ≠ i → secret j = guess j
+
+theorem card_nineMatchFinset_le_one (guess : TenElevenSecret) (i : Fin 10) :
+    (NineMatchFinset guess i).card ≤ 1 := by
+  rw [Finset.card_le_one]
+  intro secret hsecret other hother
+  have hs := (Finset.mem_filter.1 hsecret).2
+  have ho := (Finset.mem_filter.1 hother).2
+  apply Function.Embedding.ext
+  intro j
+  by_cases hji : j = i
+  · subst j
+    apply color_eq_of_avoids_guess guess
+    · intro k
+      by_cases hki : k = i
+      · subst k
+        exact hs.1
+      · intro collision
+        have at_k : secret k = guess k := hs.2 k hki
+        have same_value : secret i = secret k := collision.trans at_k.symm
+        exact hki (secret.injective same_value).symm
+    · intro k
+      by_cases hki : k = i
+      · subst k
+        exact ho.1
+      · intro collision
+        have at_k : other k = guess k := ho.2 k hki
+        have same_value : other i = other k := collision.trans at_k.symm
+        exact hki (other.injective same_value).symm
+  · exact (hs.2 j hji).trans (ho.2 j hji).symm
+
+/-- A black response of nine has at most ten secrets, one per nonmatching field. -/
+theorem card_blackFiberFinset_nine_upper (guess : TenElevenSecret) :
+    (BlackFiberFinset guess 9).card ≤ 10 := by
+  classical
+  let cover : Finset TenElevenSecret :=
+    (Finset.univ : Finset (Fin 10)).biUnion (NineMatchFinset guess)
+  have subset : BlackFiberFinset guess 9 ⊆ cover := by
+    intro secret hsecret
+    have match_card : (MatchSet guess secret).card = 9 :=
+      (Finset.mem_filter.1 hsecret).2
+    have exists_nonmatch : ∃ i : Fin 10, i ∉ MatchSet guess secret := by
+      by_contra all_match
+      have every_match : ∀ i : Fin 10, i ∈ MatchSet guess secret := by
+        intro i
+        by_contra hi
+        exact all_match ⟨i, hi⟩
+      have all : MatchSet guess secret = Finset.univ :=
+        Finset.eq_univ_of_forall every_match
+      rw [all] at match_card
+      norm_num at match_card
+    obtain ⟨i, hi⟩ := exists_nonmatch
+    have match_subset : MatchSet guess secret ⊆
+        (Finset.univ : Finset (Fin 10)).erase i := by
+      intro j hj
+      simp only [Finset.mem_erase, Finset.mem_univ, and_true]
+      intro hji
+      subst j
+      exact hi hj
+    have erase_card : ((Finset.univ : Finset (Fin 10)).erase i).card = 9 := by simp
+    have match_eq_erase : MatchSet guess secret =
+        (Finset.univ : Finset (Fin 10)).erase i := by
+      apply Finset.eq_of_subset_of_card_le match_subset
+      omega
+    apply Finset.mem_biUnion.2
+    refine ⟨i, Finset.mem_univ _, ?_⟩
+    apply Finset.mem_filter.2
+    refine ⟨Finset.mem_univ _, ?_, ?_⟩
+    · simpa [MatchSet] using hi
+    · intro j hji
+      have hj : j ∈ (Finset.univ : Finset (Fin 10)).erase i := by simp [hji]
+      rw [← match_eq_erase] at hj
+      exact (Finset.mem_filter.1 hj).2
+  calc
+    (BlackFiberFinset guess 9).card ≤ cover.card := Finset.card_le_card subset
+    _ ≤ ∑ i ∈ (Finset.univ : Finset (Fin 10)), (NineMatchFinset guess i).card :=
+      Finset.card_biUnion_le
+    _ ≤ ∑ _i ∈ (Finset.univ : Finset (Fin 10)), 1 := by
+      exact Finset.sum_le_sum fun i _hi => card_nineMatchFinset_le_one guess i
+    _ = 10 := by simp
+
+/-- Secrets whose exact match set against `guess` is `S`. -/
+noncomputable def ExactMatchSetFinset (guess : TenElevenSecret)
+    (S : Finset (Fin 10)) : Finset TenElevenSecret :=
+  Finset.univ.filter fun secret => MatchSet guess secret = S
+
+theorem exactMatchSet_subset_fixedSet (guess : TenElevenSecret)
+    (S : Finset (Fin 10)) :
+    ExactMatchSetFinset guess S ⊆ FixedSetFinset guess S := by
+  intro secret hsecret
+  have exact : MatchSet guess secret = S :=
+    (Finset.mem_filter.1 hsecret).2
+  apply Finset.mem_filter.2
+  refine ⟨Finset.mem_univ _, ?_⟩
+  intro i hi
+  have hmatch : i ∈ MatchSet guess secret := by
+    rw [exact]
+    exact hi
+  exact (Finset.mem_filter.1 hmatch).2
+
+/-- Three explicit extensions that have at least one match outside `S`. -/
+noncomputable def ThreeNonExactExtensions (guess : TenElevenSecret)
+    (S : Finset (Fin 10)) : Finset TenElevenSecret :=
+  insert guess ((Finset.univ \ S).image (replaceWithOmitted guess))
+
+theorem card_threeNonExactExtensions (guess : TenElevenSecret)
+    (S : Finset (Fin 10)) (hS : S.card = 8) :
+    (ThreeNonExactExtensions guess S).card = 3 := by
+  classical
+  have guess_not_image :
+      guess ∉ (Finset.univ \ S).image (replaceWithOmitted guess) := by
+    intro hguess
+    obtain ⟨i, _hi, equal⟩ := Finset.mem_image.1 hguess
+    exact replaceWithOmitted_ne_guess guess i equal
+  rw [ThreeNonExactExtensions, Finset.card_insert_of_notMem guess_not_image,
+    Finset.card_image_of_injective _ (replaceWithOmitted_injective guess)]
+  rw [Finset.card_sdiff_of_subset (Finset.subset_univ S)]
+  simp [hS]
+
+theorem threeNonExactExtensions_subset_sdiff (guess : TenElevenSecret)
+    (S : Finset (Fin 10)) (hS : S.card = 8) :
+    ThreeNonExactExtensions guess S ⊆
+      FixedSetFinset guess S \ ExactMatchSetFinset guess S := by
+  intro secret hsecret
+  apply Finset.mem_sdiff.2
+  rw [ThreeNonExactExtensions] at hsecret
+  rcases Finset.mem_insert.1 hsecret with hsame | hreplacement
+  · subst secret
+    refine ⟨by simp [FixedSetFinset], ?_⟩
+    intro hguess
+    have exact : MatchSet guess guess = S :=
+      (Finset.mem_filter.1 hguess).2
+    have match_all : MatchSet guess guess = Finset.univ := by
+      ext i
+      simp [MatchSet]
+    have : S.card = 10 := by
+      rw [← exact, match_all]
+      simp
+    omega
+  · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.1 hreplacement
+    have hi_not : i ∉ S := (Finset.mem_sdiff.1 hi).2
+    constructor
+    · apply Finset.mem_filter.2
+      refine ⟨Finset.mem_univ _, ?_⟩
+      intro j hj
+      apply replaceWithOmitted_apply_ne
+      intro hji
+      subst j
+      exact hi_not hj
+    · intro hexact
+      have exact : MatchSet guess (replaceWithOmitted guess i) = S :=
+        (Finset.mem_filter.1 hexact).2
+      have match_card : (MatchSet guess (replaceWithOmitted guess i)).card = 9 := by
+        rw [matchSet_replaceWithOmitted]
+        simp
+      have same_card := congrArg Finset.card exact
+      omega
+
+/-- For eight prescribed matches, precisely nonmatching leaves at most three extensions. -/
+theorem card_exactMatchSetFinset_eight_upper (guess : TenElevenSecret)
+    (S : Finset (Fin 10)) (hS : S.card = 8) :
+    (ExactMatchSetFinset guess S).card ≤ 3 := by
+  have witnesses := Finset.card_le_card
+    (threeNonExactExtensions_subset_sdiff guess S hS)
+  rw [card_threeNonExactExtensions guess S hS] at witnesses
+  have difference := Finset.card_sdiff_of_subset
+    (exactMatchSet_subset_fixedSet guess S)
+  have fixed_upper := card_fixedSetFinset_upper guess S
+  rw [hS] at fixed_upper
+  norm_num at fixed_upper
+  omega
+
+set_option maxRecDepth 2000 in
+/-- A black response of eight has at most `choose(10,8) * 3 = 135` secrets. -/
+theorem card_blackFiberFinset_eight_upper (guess : TenElevenSecret) :
+    (BlackFiberFinset guess 8).card ≤ 135 := by
+  classical
+  have subset : BlackFiberFinset guess 8 ⊆
+      ((Finset.univ : Finset (Fin 10)).powersetCard 8).biUnion
+        (ExactMatchSetFinset guess) := by
+    intro secret hsecret
+    have match_card : (MatchSet guess secret).card = 8 :=
+      (Finset.mem_filter.1 hsecret).2
+    refine Finset.mem_biUnion.mpr ⟨MatchSet guess secret, ?_, ?_⟩
+    · exact Finset.mem_powersetCard.2
+        ⟨Finset.subset_univ _, match_card⟩
+    · exact Finset.mem_filter.2 ⟨Finset.mem_univ _, rfl⟩
+  calc
+    (BlackFiberFinset guess 8).card ≤
+        (((Finset.univ : Finset (Fin 10)).powersetCard 8).biUnion
+          (ExactMatchSetFinset guess)).card := Finset.card_le_card subset
+    _ ≤ ∑ S ∈ (Finset.univ : Finset (Fin 10)).powersetCard 8,
+        (ExactMatchSetFinset guess S).card := Finset.card_biUnion_le
+    _ ≤ ∑ _S ∈ (Finset.univ : Finset (Fin 10)).powersetCard 8, 3 := by
+      apply Finset.sum_le_sum
+      intro S hS
+      exact card_exactMatchSetFinset_eight_upper guess S
+        (Finset.mem_powersetCard.1 hS).2
+    _ = 135 := by norm_num [Nat.choose]
+
+/--
+A black-fiber cap specialized to short continuations.  Responses eight and
+nine are sharpened because the general match-set union bound also counts
+extensions having additional matches.
+-/
+def tenElevenShortBlackFiberCap (b : Fin 11) : Nat :=
+  if b.1 = 9 then 10
+  else if b.1 = 8 then 135
+  else tenElevenBlackFiberCap b
+
+theorem card_tenElevenShortBlackFiber_upper (guess : TenElevenSecret) (b : Fin 11) :
+    (Finset.univ.filter fun secret => tenElevenBlackAnswer guess secret = b).card ≤
+      tenElevenShortBlackFiberCap b := by
+  by_cases hb : b.1 = 9
+  · rw [tenElevenShortBlackFiberCap, if_pos hb]
+    have subset :
+        (Finset.univ.filter fun secret => tenElevenBlackAnswer guess secret = b) ⊆
+          BlackFiberFinset guess 9 := by
+      intro secret hsecret
+      apply Finset.mem_filter.2
+      refine ⟨Finset.mem_univ _, ?_⟩
+      have answer_eq := congrArg Fin.val (Finset.mem_filter.1 hsecret).2
+      exact answer_eq.trans hb
+    exact (Finset.card_le_card subset).trans (card_blackFiberFinset_nine_upper guess)
+  · rw [tenElevenShortBlackFiberCap, if_neg hb]
+    by_cases hb8 : b.1 = 8
+    · rw [if_pos hb8]
+      have subset :
+          (Finset.univ.filter fun secret => tenElevenBlackAnswer guess secret = b) ⊆
+            BlackFiberFinset guess 8 := by
+        intro secret hsecret
+        apply Finset.mem_filter.2
+        refine ⟨Finset.mem_univ _, ?_⟩
+        have answer_eq := congrArg Fin.val (Finset.mem_filter.1 hsecret).2
+        exact answer_eq.trans hb8
+      exact (Finset.card_le_card subset).trans
+        (card_blackFiberFinset_eight_upper guess)
+    · rw [if_neg hb8]
+      exact card_tenElevenBlackFiber_upper guess b
+
 /--
 A relaxed strategy still uses legal black queries, but its extra bit may be an
 arbitrary Boolean predicate. Bounding this stronger game also bounds the real
@@ -515,6 +856,67 @@ theorem TenElevenRelaxedStrategy.card_le_capacity {rounds : Nat}
               (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit)
               (solves b bit)
           _ = 2 * tenElevenRelaxedCapacity rounds := by simp
+
+/--
+Short-horizon capacity using the refined fibers for black responses eight and
+nine.  The improvement first matters in round two and will be used to audit a
+five-round zero/false adversary for a prospective nine-round lower bound.
+-/
+def tenElevenShortCapacity : Nat → Nat
+  | 0 => 1
+  | rounds + 1 => ∑ b : Fin 11,
+      min (tenElevenShortBlackFiberCap b) (2 * tenElevenShortCapacity rounds)
+
+@[simp] theorem tenElevenShortCapacity_three :
+    tenElevenShortCapacity 3 = 6370 := by
+  decide
+
+theorem TenElevenRelaxedStrategy.card_le_shortCapacity {rounds : Nat}
+    (tree : TenElevenRelaxedStrategy rounds) (candidates : Finset TenElevenSecret)
+    (solves : tree.Solves candidates) :
+    candidates.card ≤ tenElevenShortCapacity rounds := by
+  induction tree generalizing candidates with
+  | leaf => exact solves
+  | @node rounds guess extra next ih =>
+      rw [tenElevenShortCapacity]
+      rw [Finset.card_eq_sum_card_fiberwise
+        (s := candidates) (t := Finset.univ)
+        (f := tenElevenBlackAnswer guess) (by simp)]
+      apply Finset.sum_le_sum
+      intro b _hb
+      apply le_min
+      · apply (Finset.card_le_card ?_).trans
+          (card_tenElevenShortBlackFiber_upper guess b)
+        intro secret hsecret
+        exact Finset.mem_filter.2
+          ⟨Finset.mem_univ _, (Finset.mem_filter.1 hsecret).2⟩
+      · change (TenElevenRelaxedStrategy.blackBranch candidates guess b).card ≤ _
+        rw [Finset.card_eq_sum_card_fiberwise
+          (s := TenElevenRelaxedStrategy.blackBranch candidates guess b)
+          (t := Finset.univ) (f := extra b) (by
+            intro _secret _hsecret
+            exact Finset.mem_univ _)]
+        change (∑ bit : Bool,
+          (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit).card) ≤ _
+        calc
+          ∑ bit : Bool,
+              (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit).card
+              ≤ ∑ _bit : Bool, tenElevenShortCapacity rounds := by
+            apply Finset.sum_le_sum
+            intro bit _hbit
+            exact ih b bit
+              (TenElevenRelaxedStrategy.answerBranch candidates guess extra b bit)
+              (solves b bit)
+          _ = 2 * tenElevenShortCapacity rounds := by simp
+
+/-- No relaxed three-round continuation can distinguish 6,371 candidates. -/
+theorem no_three_round_continuation_of_large
+    (tree : TenElevenRelaxedStrategy 3) (candidates : Finset TenElevenSecret)
+    (large : 6370 < candidates.card) : ¬ tree.Solves candidates := by
+  intro solves
+  have upper := tree.card_le_shortCapacity candidates solves
+  rw [tenElevenShortCapacity_three] at upper
+  omega
 
 noncomputable def ZeroFalseFinset (guess : TenElevenSecret) (i : Fin 10)
     (color : Fin 11) : Finset TenElevenSecret :=
@@ -618,6 +1020,88 @@ theorem tenElevenLowerBoundEight
       have lower := card_zeroFalseFinset_exceeds_capacity_six
         guess (check 0).1 (check 0).2
       omega
+
+/-! ### Exact reduction of a nine-round lower bound to five zero/false rounds -/
+
+/-- Apply one legal zero-black/false-check response to a candidate set. -/
+noncomputable def zeroFalseStep (candidates : Finset TenElevenSecret)
+    (guess : TenElevenSecret) (edge : Fin 10 × Fin 11) : Finset TenElevenSecret :=
+  TenElevenRelaxedStrategy.answerBranch candidates guess
+    (fun _b secret => decide (secret edge.1 = edge.2)) 0 false
+
+@[simp] theorem mem_zeroFalseStep (candidates : Finset TenElevenSecret)
+    (guess : TenElevenSecret) (edge : Fin 10 × Fin 11)
+    (secret : TenElevenSecret) :
+    secret ∈ zeroFalseStep candidates guess edge ↔
+      secret ∈ candidates ∧
+      (∀ i, secret i ≠ guess i) ∧ secret edge.1 ≠ edge.2 := by
+  simp [zeroFalseStep, TenElevenRelaxedStrategy.answerBranch,
+    TenElevenRelaxedStrategy.blackBranch, tenElevenBlackAnswer_eq_zero_iff,
+    and_assoc]
+
+/-- The survivors of five consecutive zero-black/false-check responses. -/
+noncomputable def FiveZeroFalseFinset
+    (guess₀ guess₁ guess₂ guess₃ guess₄ : TenElevenSecret)
+    (edge₀ edge₁ edge₂ edge₃ edge₄ : Fin 10 × Fin 11) :
+    Finset TenElevenSecret :=
+  zeroFalseStep
+    (zeroFalseStep
+      (zeroFalseStep
+        (zeroFalseStep
+          (zeroFalseStep Finset.univ guess₀ edge₀) guess₁ edge₁)
+        guess₂ edge₂)
+      guess₃ edge₃)
+    guess₄ edge₄
+
+/--
+Conditional adversary reduction for the open ninth round.  It does not assume
+the desired conclusion: its sole hypothesis is the concrete intersection
+statement that every five-query zero/false survivor set has more than the
+refined three-round capacity `6370`.
+-/
+theorem tenElevenLowerBoundNine_of_fiveZeroFalse_large
+    (fiveZeroFalseLarge :
+      ∀ (guess₀ guess₁ guess₂ guess₃ guess₄ : TenElevenSecret)
+        (edge₀ edge₁ edge₂ edge₃ edge₄ : Fin 10 × Fin 11),
+        6370 < (FiveZeroFalseFinset guess₀ guess₁ guess₂ guess₃ guess₄
+          edge₀ edge₁ edge₂ edge₃ edge₄).card)
+    (tree : TenElevenStrategy 8) (solves : tree.Solves Finset.univ) : False := by
+  cases tree with
+  | node guess₀ check₀ next₀ =>
+      have solves₁ := solves (0 : Fin 11) false
+      cases tree₁ : next₀ 0 false with
+      | node guess₁ check₁ next₁ =>
+          change (next₀ 0 false).toRelaxed.Solves _ at solves₁
+          rw [tree₁] at solves₁
+          have solves₂ := solves₁ (0 : Fin 11) false
+          cases tree₂ : next₁ 0 false with
+          | node guess₂ check₂ next₂ =>
+              change (next₁ 0 false).toRelaxed.Solves _ at solves₂
+              rw [tree₂] at solves₂
+              have solves₃ := solves₂ (0 : Fin 11) false
+              cases tree₃ : next₂ 0 false with
+              | node guess₃ check₃ next₃ =>
+                  change (next₂ 0 false).toRelaxed.Solves _ at solves₃
+                  rw [tree₃] at solves₃
+                  have solves₄ := solves₃ (0 : Fin 11) false
+                  cases tree₄ : next₃ 0 false with
+                  | node guess₄ check₄ next₄ =>
+                      change (next₃ 0 false).toRelaxed.Solves _ at solves₄
+                      rw [tree₄] at solves₄
+                      have solves₅ := solves₄ (0 : Fin 11) false
+                      have large := fiveZeroFalseLarge
+                        guess₀ guess₁ guess₂ guess₃ guess₄
+                        (check₀ 0) (check₁ 0) (check₂ 0) (check₃ 0) (check₄ 0)
+                      apply no_three_round_continuation_of_large
+                        ((next₄ 0 false).toRelaxed)
+                        (FiveZeroFalseFinset guess₀ guess₁ guess₂ guess₃ guess₄
+                          (check₀ 0) (check₁ 0) (check₂ 0) (check₃ 0) (check₄ 0))
+                        large
+                      simpa [FiveZeroFalseFinset, zeroFalseStep,
+                        TenElevenRelaxedStrategy.answerBranch,
+                        TenElevenRelaxedStrategy.blackBranch,
+                        tree₁, tree₂, tree₃, tree₄]
+                        using solves₅
 
 /--
 The numerical value of the published classical AB-Mastermind construction at
