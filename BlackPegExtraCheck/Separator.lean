@@ -103,6 +103,33 @@ theorem Sep.mono {depth : Nat} {smaller larger : Finset TenElevenSecret}
       · exact ih (checkedBranch_mono subset guess black edge true) yes
       · exact ih (checkedBranch_mono subset guess black edge false) no
 
+/-- The empty candidate state is solvable at every depth. -/
+theorem Sep.empty (depth : Nat) :
+    Sep depth (∅ : Finset TenElevenSecret) := by
+  induction depth with
+  | zero => simp
+  | succ depth ih =>
+      rw [sep_succ_iff]
+      refine ⟨Fin.castSuccEmb, ?_⟩
+      intro black
+      refine ⟨(0, 0), ?_, ?_⟩
+      · simpa [checkedBranch] using ih
+      · simpa [checkedBranch] using ih
+
+/-- A solving separator may be padded by one unused legal round. -/
+theorem Sep.pad {depth : Nat} {candidates : Finset TenElevenSecret}
+    (separates : Sep depth candidates) : Sep (depth + 1) candidates := by
+  rw [sep_succ_iff]
+  refine ⟨Fin.castSuccEmb, ?_⟩
+  intro black
+  refine ⟨(0, 0), ?_, ?_⟩
+  · exact Sep.mono (by
+      intro secret secret_mem
+      exact (mem_checkedBranch _ _ _ _ _ _).1 secret_mem |>.1) separates
+  · exact Sep.mono (by
+      intro secret secret_mem
+      exact (mem_checkedBranch _ _ _ _ _ _).1 secret_mem |>.1) separates
+
 /-! ## Finite certificates -/
 
 /--

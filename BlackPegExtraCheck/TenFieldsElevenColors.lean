@@ -25,10 +25,10 @@ recurrence then proves eight: even if every later extra check were an arbitrary
 Boolean predicate, six rounds distinguish at most `10,676,379` candidates,
 fewer than the zero/false branch left after round one.
 
-For the upper bound, the file records conditional arithmetic for the published
-44-round classical bound and successively shorter proposed hybrid protocols.
-In particular, the final 14-round theorem assumes the named nine-rook strategy;
-this file does not construct an executable upper strategy.
+For the upper bound, the file records the arithmetic of the published
+44-round classical bound and of shorter proposed allocations.  The arithmetic
+definitions are not strategy theorems.  Exact cyclic composition and the
+remaining separator premise are formalized separately in `CyclicStrategy`.
 -/
 
 namespace BlackPegExtraCheck
@@ -1113,8 +1113,8 @@ def tenElevenPublishedRoundBound : Nat := (10 - 2) * 4 + 11 + 1
     tenElevenPublishedRoundBound = 44 := by
   norm_num [tenElevenPublishedRoundBound]
 
-/-- The cited classical strategy gives the stronger upper bound `T⁺ ≤ 44`. -/
-theorem tenElevenUpperBoundFortyFour {TPlus : Nat}
+/-- The externally cited classical strategy implies the upper bound `T⁺ ≤ 44`. -/
+theorem tenElevenUpperBoundFortyFour_of_publishedStrategy {TPlus : Nat}
     (publishedClassicalStrategy : TPlus ≤ tenElevenPublishedRoundBound) :
     TPlus ≤ 44 := by
   simpa using publishedClassicalStrategy
@@ -1124,13 +1124,14 @@ The requested upper-bound lemma. The extra-check game can ignore its extra
 answer bit and run the cited classical strategy, whose 44-round bound is
 stronger than 45.
 -/
-theorem tenElevenUpperBoundFortyFive {TPlus : Nat}
+theorem tenElevenUpperBoundFortyFive_of_publishedStrategy {TPlus : Nat}
     (publishedClassicalStrategy : TPlus ≤ tenElevenPublishedRoundBound) :
     TPlus ≤ 45 := by
-  have stronger := tenElevenUpperBoundFortyFour publishedClassicalStrategy
+  have stronger :=
+    tenElevenUpperBoundFortyFour_of_publishedStrategy publishedClassicalStrategy
   omega
 
-/-! ## Hybrid upper bound using the extra checks -/
+/-! ## Arithmetic of proposed hybrid allocations -/
 
 /--
 Ten cyclic setup rounds, four padded `findNext` calls of four rounds each, and
@@ -1143,20 +1144,7 @@ def tenElevenHybridRoundBound : Nat := 10 + 3 * 4 + 4 + 1
     tenElevenHybridRoundBound = 27 := by
   norm_num [tenElevenHybridRoundBound]
 
-/-- The hybrid protocol gives the improved upper bound `T⁺(10,11) ≤ 27`. -/
-theorem tenElevenUpperBoundTwentySeven {TPlus : Nat}
-    (hybridStrategy : TPlus ≤ tenElevenHybridRoundBound) :
-    TPlus ≤ 27 := by
-  simpa using hybridStrategy
-
-/-- A convenient weaker corollary retained for comparison with the first schedule. -/
-theorem tenElevenUpperBoundTwentyEight {TPlus : Nat}
-    (hybridStrategy : TPlus ≤ tenElevenHybridRoundBound) :
-    TPlus ≤ 28 := by
-  have stronger := tenElevenUpperBoundTwentySeven hybridStrategy
-  omega
-
-/-! ## Three-call hybrid upper bound -/
+/-! ## Three-call hybrid allocation -/
 
 /--
 Ten cyclic setup rounds, three padded `findNext` calls, and the three-round
@@ -1168,13 +1156,7 @@ def tenElevenThreeCallRoundBound : Nat := 10 + 3 * 4 + 3
     tenElevenThreeCallRoundBound = 25 := by
   norm_num [tenElevenThreeCallRoundBound]
 
-/-- The three-call hybrid protocol gives `T⁺(10,11) ≤ 25`. -/
-theorem tenElevenUpperBoundTwentyFive {TPlus : Nat}
-    (threeCallHybridStrategy : TPlus ≤ tenElevenThreeCallRoundBound) :
-    TPlus ≤ 25 := by
-  simpa using threeCallHybridStrategy
-
-/-! ## Shrinking-search hybrid upper bound -/
+/-! ## Shrinking-search hybrid allocation -/
 
 /--
 Ten setup rounds, three `findNext` calls on nine, eight, and seven open
@@ -1186,13 +1168,7 @@ def tenElevenShrinkingSearchRoundBound : Nat := 10 + 4 + 3 + 3 + 3
     tenElevenShrinkingSearchRoundBound = 23 := by
   norm_num [tenElevenShrinkingSearchRoundBound]
 
-/-- Balancing `findNext` by open positions gives `T⁺(10,11) ≤ 23`. -/
-theorem tenElevenUpperBoundTwentyThree {TPlus : Nat}
-    (shrinkingSearchStrategy : TPlus ≤ tenElevenShrinkingSearchRoundBound) :
-    TPlus ≤ 23 := by
-  simpa using shrinkingSearchStrategy
-
-/-! ## Two-search cylindrical-X-ray upper bound -/
+/-! ## Two-search cylindrical-X-ray allocation -/
 
 /--
 Ten cyclic setup rounds, two `findNext` calls on nine and eight open
@@ -1203,13 +1179,6 @@ def tenElevenCylindricalSearchRoundBound : Nat := 10 + 4 + 3 + 2
 @[simp] theorem tenElevenCylindricalSearchRoundBound_eq :
     tenElevenCylindricalSearchRoundBound = 19 := by
   norm_num [tenElevenCylindricalSearchRoundBound]
-
-/-- The two-search cylindrical-X-ray protocol gives `T⁺(10,11) ≤ 19`. -/
-theorem tenElevenUpperBoundNineteen {TPlus : Nat}
-    (twoSearchCylindricalStrategy :
-      TPlus ≤ tenElevenCylindricalSearchRoundBound) :
-    TPlus ≤ 19 := by
-  simpa using twoSearchCylindricalStrategy
 
 /-! ## Equality-accelerated cyclic search -/
 
@@ -1223,13 +1192,6 @@ def tenElevenAcceleratedSearchRoundBound : Nat := 10 + 3 * 2 + 2
     tenElevenAcceleratedSearchRoundBound = 18 := by
   norm_num [tenElevenAcceleratedSearchRoundBound]
 
-/-- Equality-accelerated cyclic search gives `T⁺(10,11) ≤ 18`. -/
-theorem tenElevenUpperBoundEighteen {TPlus : Nat}
-    (acceleratedCylindricalStrategy :
-      TPlus ≤ tenElevenAcceleratedSearchRoundBound) :
-    TPlus ≤ 18 := by
-  simpa using acceleratedCylindricalStrategy
-
 /-! ## Seven-position cylindrical-X-ray endgame -/
 
 /--
@@ -1241,13 +1203,6 @@ def tenElevenSevenRookRoundBound : Nat := 10 + 2 * 2 + 2
 @[simp] theorem tenElevenSevenRookRoundBound_eq :
     tenElevenSevenRookRoundBound = 16 := by
   norm_num [tenElevenSevenRookRoundBound]
-
-/-- The seven-rook cylindrical-X-ray protocol gives `T⁺(10,11) ≤ 16`. -/
-theorem tenElevenUpperBoundSixteen {TPlus : Nat}
-    (sevenRookCylindricalStrategy :
-      TPlus ≤ tenElevenSevenRookRoundBound) :
-    TPlus ≤ 16 := by
-  simpa using sevenRookCylindricalStrategy
 
 /-! ## Eight-position cylindrical-X-ray endgame -/
 
@@ -1261,13 +1216,6 @@ def tenElevenEightRookRoundBound : Nat := 10 + 2 + 3
     tenElevenEightRookRoundBound = 15 := by
   norm_num [tenElevenEightRookRoundBound]
 
-/-- The eight-rook cylindrical-X-ray protocol gives `T⁺(10,11) ≤ 15`. -/
-theorem tenElevenUpperBoundFifteen {TPlus : Nat}
-    (eightRookCylindricalStrategy :
-      TPlus ≤ tenElevenEightRookRoundBound) :
-    TPlus ≤ 15 := by
-  simpa using eightRookCylindricalStrategy
-
 /-! ## Nine-position cylindrical-X-ray endgame -/
 
 /-- Ten cyclic setup rounds and the four-round nine-rook X-ray endgame. -/
@@ -1276,11 +1224,5 @@ def tenElevenNineRookRoundBound : Nat := 10 + 4
 @[simp] theorem tenElevenNineRookRoundBound_eq :
     tenElevenNineRookRoundBound = 14 := by
   norm_num [tenElevenNineRookRoundBound]
-
-/-- The nine-rook cylindrical-X-ray protocol gives `T⁺(10,11) ≤ 14`. -/
-theorem tenElevenUpperBoundFourteen {TPlus : Nat}
-    (nineRookCylindricalStrategy : TPlus ≤ tenElevenNineRookRoundBound) :
-    TPlus ≤ 14 := by
-  simpa using nineRookCylindricalStrategy
 
 end BlackPegExtraCheck

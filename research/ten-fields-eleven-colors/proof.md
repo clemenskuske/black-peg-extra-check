@@ -19,10 +19,13 @@ The closed lower-bound development gives
 
 The cited classical construction gives the rigorous mathematical upper bound
 `T+(10,11) <= 44` by ignoring the extra answer; its Lean theorem imports that
-external construction as a premise. The later cyclic/X-ray discussion proposes
-`T+(10,11) <= 14`, but the corresponding allocation theorem assumes the
-missing nine-rook strategy. The audit below explains why 14 is conditional
-rather than a closed upper bound.
+external construction as a premise. The later cyclic/X-ray discussion claimed
+`T+(10,11) <= 15`, but its universal three-round eight-rook switching lemma was
+never proved. Lean now checks the cyclic setup and the equality-accelerated
+two-round search, and narrows the missing premise exactly to
+`EightRookCylindricalSepThree`. The further fourteen-round allocation needs a
+four-round nine-rook separator as well. Neither 15 nor 14 is a closed upper
+bound.
 
 ## Lower bound
 
@@ -345,7 +348,7 @@ The extra-check game may ignore its additional Boolean answer and run exactly
 this classical strategy. Therefore `T+(10, 11) <= 44`, which immediately gives
 the originally requested `T+(10, 11) <= 45`.
 
-### Hybrid improvement to twenty-five
+### Proposed hybrid allocation: twenty-five
 
 The extra checks can be integrated into the classical construction much more
 effectively.
@@ -444,9 +447,12 @@ The total is
 10 + 3 * 4 + 3 = 25.
 ```
 
-Therefore `T+(10, 11) <= 25`.
+This allocation would give `T+(10, 11) <= 25` after the displayed residual
+certificate and the pipelined search invariant are checked as a complete
+strategy. They are not composed into a verified tree here, so this section is
+not used as a closed numerical bound.
 
-### Balancing by open positions: twenty-three
+### Proposed open-position allocation: twenty-three
 
 The four-round padding is unnecessary after the first search. Algorithm 4 in
 the cited construction maintains an interval containing a correct open
@@ -482,9 +488,10 @@ The five-position endgame is unchanged, so the improved total is
 10 + 4 + 3 + 3 + 3 = 23.
 ```
 
-Thus `T+(10,11) <= 23`.
+Subject to the preceding unverified residual and pipelining claims, this would
+give `T+(10,11) <= 23`.
 
-### Two searches and a cylindrical X-ray: nineteen
+### Proposed two-search cylindrical allocation: nineteen
 
 The opening answers contain more information than the `findNext` routine
 uses.  Keep the complete vector `(b_0,...,b_10)` of cyclic black counts.  For
@@ -632,9 +639,10 @@ is
 10 + 4 + 3 + 2 = 19.
 ```
 
-Therefore `T+(10,11) <= 19`.
+This would give `T+(10,11) <= 19` if the six-rook switching and separator
+claims below were supplied as complete proofs.
 
-### Equality-accelerated cyclic search: eighteen
+### Equality-accelerated cyclic search allocation: eighteen
 
 The ordinary `findNext` comparison throws away the equality check.  It can be
 used to shorten the search itself.
@@ -679,9 +687,11 @@ six-rook switching lemma.  The total is
 10 + 3*2 + 2 = 18.
 ```
 
-Thus `T+(10,11) <= 18`.
+Lean now verifies the two-round recurrence for the first call as part of the
+fifteen-round reduction. The displayed eighteen-round total would additionally
+need the unproved six-rook endgame, so it is not a closed bound here.
 
-### Seven-rook endgame: sixteen
+### Proposed seven-rook endgame: sixteen
 
 One fewer accelerated search is enough if the cofactor argument is carried
 one step further.
@@ -738,9 +748,10 @@ known and seven remain.  Apply the seven-rook lemma to finish in two rounds:
 10 + 2*2 + 2 = 16.
 ```
 
-Therefore `T+(10,11) <= 16`.
+Subject to the universal seven-rook separator claim, this allocation would give
+`T+(10,11) <= 16`.
 
-### Eight-rook endgame: fifteen
+### Eight-rook endgame: the missing premise for fifteen
 
 The cofactor argument admits one more step, although the endgame now needs
 three rounds rather than two.
@@ -775,7 +786,7 @@ multisets gives the following table.
 | `2+1+1+1+1+1+1` | 84 |
 | `1+1+1+1+1+1+1+1` | 86 |
 
-Here is the separator part of the same calculation. Mark a reference
+The intended separator calculation was described as follows. Mark a reference
 matching by a variable `u`, and mark one edge in the first nontrivial
 alternating cycle by `v`. In the cofactor expansion, the coefficient of
 `u^b v^e` is exactly the candidate class after black answer `b` and Boolean
@@ -783,9 +794,13 @@ edge answer `e`. Expand each such marked coefficient once more, using the
 seven-rook separator table in the true cofactor and the next alternating cycle
 in the false cofactor. For each of the 22 rows above, the second marked
 expansion has black classes of size at most two. The third round's adaptive
-equality check distinguishes that possible pair. Thus the coefficient bound
-and the three-round separator follow from the same 22-row switching
-calculation; there is no game tree over `8!` secrets.
+equality check would distinguish that possible pair.
+
+This paragraph is an outline, not a proof. It does not display the 22 marked
+rows, define the alleged closure invariant, or map every false cofactor union
+to a solved state. In particular, fixing an edge gives a seven-rook fiber, but
+the false edge child is generally a union of cofactors; the unmarked
+coefficient table does not solve that union.
 
 Newton's identities justify the power-sum step: they recover a multiset of
 eight elements from its first eight power sums over `Z/11Z`, since
@@ -809,9 +824,12 @@ the fiber has 86 matchings. The first query `42076913` has black-class sizes
 Testing the edge `f(0)=0` splits all six classes into two-round states; their
 largest false children have sizes `22,19,17,11,5,1`. This is the sharp row's
 marked-cofactor certificate. The reproducible audit programs
-`eight_rook_profiles.cpp` and `eight_rook_certificate.py` compute the table
-and check this certificate, but the proof is the cofactor/power-sum reduction
-above rather than an exhaustive Mastermind decision tree.
+`eight_rook_profiles.cpp` and `eight_rook_certificate.py` reproduce the table
+and find a legal three-round certificate for this one sharp state. The compact
+table exported by `export_sharp_eight_rook_lean.py` is checked by Lean in
+`SharpEightRookCertificate.lean`, including its 86 distinct candidates and the
+exact adaptive quantifier order. It does not cover every cylindrical fiber and
+therefore does not prove the universal lemma.
 
 After the cyclic setup, one accelerated search takes two rounds and fixes one
 new coordinate. Together with the setup coordinate, two positions are known
@@ -821,7 +839,10 @@ and eight remain. Apply the eight-rook lemma:
 10 + 2 + 3 = 15.
 ```
 
-Therefore `T+(10,11) <= 15`.
+Lean proves that the setup and accelerated search really reduce the full game
+to the proposition that every resulting eight-rook fiber has `Sep 3`. Thus
+`10 + 2 + 3 = 15` is now an exact conditional composition, not a closed upper
+bound.
 
 ### Nine-rook endgame: conditional fourteen-round allocation
 
@@ -902,20 +923,22 @@ Subject to the nine-rook switching lemma, this allocation would give
 
 ### Audit of the cyclic/X-ray upper bound
 
-The ten-query cyclic setup identities are consistent: the eleven black counts
-sum to ten, their weighted sum determines the omitted color modulo eleven,
-and the ten equality checks can identify one coordinate. The supplied profile
-programs also reproduce the stated maximum X-ray fiber sizes, including the
-498-member nine-rook fiber.
+The ten-query cyclic setup and the equality-accelerated search now have formal
+proofs. Lean checks that the eleven black counts sum to ten, the unqueried
+count is reconstructed, the ten equality checks identify field zero, an active
+cyclic class followed by a zero class exists, every mixed query is legal, and
+the balanced false-answer recurrence is `9 -> 4 -> 1`. The supplied profile
+programs reproduce the stated maximum X-ray fiber sizes, including the
+86-member eight-rook and 498-member nine-rook fibers.
 
-They do **not**, however, verify the adaptive separator asserted by the
-nine-rook switching lemma. `nine_rook_profiles.cpp` counts coefficients only;
-it contains no strategy search or marked-cofactor check. Likewise, the prose
-claim that all 30 multiplicity rows are closed under the two marked operations
-does not display those marked rows or a map from every child to an already
-solved eight-rook state. A coefficient bound alone does not imply a
-four-round legal strategy. The same distinction applies to a sought
-three-round endgame for a 13-round total.
+The programs do **not**, however, verify either universal adaptive separator.
+`eight_rook_profiles.cpp` and `nine_rook_profiles.cpp` count coefficients only;
+they contain no all-fiber strategy search or marked-cofactor check. The Python
+certificate search and its Lean-checked export cover only the named 86-member
+state. Likewise, the prose claims that the multiplicity rows are closed under
+marked operations do not
+display those rows or a map from every child to an already solved state. A
+coefficient bound alone does not imply a legal separator.
 
 In particular, the inequality `498 < 20^3` and the coefficient table do not by
 themselves supply the missing strategy. No closed 13-round protocol was
@@ -945,8 +968,9 @@ No all-fiber certificate has yet been checked. In particular, the new checker
 does not by itself prove that every eight-rook fiber has `Sep_3`, or that every
 nine-rook fiber has `Sep_4` or `Sep_3`. Symmetry normalization and a compact
 certificate covering every normalized fiber remain implementation
-bottlenecks. Therefore the closed upper bound remains the externally premised
-classical 44-round result, and 14 remains only the conditional allocation.
+bottlenecks. Therefore the closed mathematical upper bound remains the
+source-backed classical 44-round result; 15 and 14 remain conditional
+allocations.
 
 ## Lean scope
 
@@ -965,17 +989,23 @@ state, five-factor necessity, permanent-threshold arithmetic, the
 six-regular defect reduction, and the explicit degree-one obstruction. It
 does not prove the universal inequality (5).
 
-For the upper bound, Lean checks only the published 44-round arithmetic and
-the arithmetic of the shorter allocations, including `10 + 4 = 14`. The
-phase-1 modular identity, the `findNext` variants, and the cylindrical-X-ray
-separators are not represented as one executable Lean strategy. Accordingly,
-the Lean upper theorem takes the explicitly named premise
-`nineRookCylindricalStrategy`; there is no axiom or hidden placeholder, but
-there is also no closed theorem constructing that strategy.
+For the upper-bound audit, Lean checks the published 44-round arithmetic and
+the arithmetic of the shorter allocations. More importantly,
+[`BlackPegExtraCheck/CyclicStrategy.lean`](../../BlackPegExtraCheck/CyclicStrategy.lean)
+now formalizes the ten cyclic rounds, transcript reconstruction, legal mixed
+queries, the two-round accelerated search, and their strategy-tree
+composition. The theorem
+`exists_fifteenRoundStrategy_of_eightRookCylindricalSep` constructs an actual
+`TenElevenStrategy 15` from the single precise premise
+`EightRookCylindricalSepThree`. No theorem turns a bare numerical premise into
+a purported upper bound, and no proof of that separator premise is supplied.
 
 The separator file is exact and executable, but currently contains checker
-infrastructure rather than an all-fiber certificate. It changes no numerical
-upper bound.
+infrastructure rather than an all-fiber certificate. Lean accepts one explicit
+three-round certificate for the named sharp 86-state example in
+[`BlackPegExtraCheck/SharpEightRookCertificate.lean`](../../BlackPegExtraCheck/SharpEightRookCertificate.lean).
+That example changes no numerical upper bound; a complete certificate family
+or a structural universal theorem is still required.
 
 ## Primary sources
 
