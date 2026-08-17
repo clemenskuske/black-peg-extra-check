@@ -39,8 +39,14 @@ queries, the equality-accelerated recurrence `9 -> 4 -> 1`, and their exact
 composition into a fifteen-round strategy *conditional only on* the universal
 three-round eight-rook separator proposition
 `EightRookCylindricalSepThree`. No witness for that proposition is supplied.
-The older fourteen-round allocation additionally needs an unproved
-four-round nine-rook separator.
+The older fourteen-round allocation is now formalized as a conditional
+composition from the proposition `NineRookCylindricalSepFour`. A reconstructed
+standalone verifier at
+[`research/ten-fields-eleven-colors/verify_nine_rook_sep4.cpp`](research/ten-fields-eleven-colors/verify_nine_rook_sep4.cpp)
+checks every normalized nine-rook fiber with the legal black-answer-then-
+adaptive-equality quantifier order, but its certificates have not yet been
+imported into Lean. Therefore the repository still does not claim an
+unconditional `T+(10,11) <= 14` theorem.
 
 For the lower-bound direction, the audit also gives a kernel-checked reduction
 of a possible ninth-round lower bound to a five-fiber intersection inequality.

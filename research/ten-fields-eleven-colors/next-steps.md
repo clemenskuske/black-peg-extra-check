@@ -71,7 +71,26 @@ This route is attractive because it improves the already formalized phase
 rather than demanding a stronger separator.  It must explicitly reconstruct
 the residual cylindrical profile; knowing only its total size is insufficient.
 
-### 3. Build symmetry-reduced, proof-producing all-fiber certificates
+### 3. Import the nine-rook all-fiber verifier into Lean
+
+`verify_nine_rook_sep4.cpp` now independently reproduces the normalized
+nine-rook Sep 4 search:
+
+```text
+position representatives: 5
+color representatives: 5
+normalized support pairs: 25
+fibers checked: 207270
+total fiber memberships: 9072000
+maximum fiber size: 498
+fibers of size >= 4: 195790
+not solved in four rounds: 0
+```
+
+The remaining task is proof production, not another existence search. Serialize
+the selected query, checked edge, and child references as deterministic DAGs;
+then prove the normalization/transport lemmas and check the DAGs with
+`SeparatorCertificate.check`.
 
 Use the affine action
 

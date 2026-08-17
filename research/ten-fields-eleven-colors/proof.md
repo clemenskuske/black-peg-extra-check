@@ -912,7 +912,7 @@ rows after translation normalization. There are only `10*10` normalized
 position/color pairs; this is a check of the finite switching table, not a
 search over Mastermind strategies.
 
-The complete schedule is now
+The complete conditional schedule is
 
 ```text
 10 + 4 = 14.
@@ -920,6 +920,54 @@ The complete schedule is now
 
 Subject to the nine-rook switching lemma, this allocation would give
 `T+(10,11) <= 14`.
+
+The reconstructed verifier
+`research/ten-fields-eleven-colors/verify_nine_rook_sep4.cpp` checks the
+stronger explicit separator-search version of the nine-rook claim. It does
+not use the unattached source or SHA quoted in the Sep 4 proposal. It
+enumerates translation/reflection-normalized support pairs, groups each
+support pair's `9!` bijections by exact displacement histogram, and then runs
+the legal predicate
+
+```text
+Sep_0(S)       iff |S| <= 1,
+Sep_(d+1)(S)   iff exists query q, forall black b, exists checked edge e,
+                 both Boolean children satisfy Sep_d.
+```
+
+Queries are restricted to current candidate bijections, which is a sound
+restriction for proving existence because those queries are legal. The checked
+output in this repository is:
+
+```text
+position representatives: 5
+color representatives: 5
+normalized support pairs: 25
+fibers checked: 207270
+total fiber memberships: 9072000
+maximum fiber size: 498
+fibers of size >= 4: 195790
+not solved in four rounds: 0
+```
+
+The source SHA-256 is
+
+```text
+1b6182b58e5a2f9ab94f8e99c5fd406319bcc36c4c293de2ba949cb0c8487965
+```
+
+Reproduce it with
+
+```sh
+g++ -std=c++2a -O3 research/ten-fields-eleven-colors/verify_nine_rook_sep4.cpp -o /tmp/verify_nine_rook_sep4
+/tmp/verify_nine_rook_sep4
+```
+
+This closes the standalone computational audit of the normalized Sep 4 search,
+but it is still not a Lean-kernel proof. The verifier currently proves and
+discards existence during recursion; it does not serialize a deterministic
+certificate DAG, prove normalization completeness in Lean, or transport a
+checked certificate back to arbitrary cylindrical fibers.
 
 ### Audit of the cyclic/X-ray upper bound
 
@@ -931,14 +979,15 @@ the balanced false-answer recurrence is `9 -> 4 -> 1`. The supplied profile
 programs reproduce the stated maximum X-ray fiber sizes, including the
 86-member eight-rook and 498-member nine-rook fibers.
 
-The programs do **not**, however, verify either universal adaptive separator.
-`eight_rook_profiles.cpp` and `nine_rook_profiles.cpp` count coefficients only;
-they contain no all-fiber strategy search or marked-cofactor check. The Python
+The profile programs do **not**, however, verify either universal adaptive
+separator. `eight_rook_profiles.cpp` and `nine_rook_profiles.cpp` count
+coefficients only. The new nine-rook Sep 4 verifier is an all-fiber strategy
+search, but its proof objects are not imported into Lean. The Python
 certificate search and its Lean-checked export cover only the named 86-member
 state. Likewise, the prose claims that the multiplicity rows are closed under
-marked operations do not
-display those rows or a map from every child to an already solved state. A
-coefficient bound alone does not imply a legal separator.
+marked operations do not display those rows or a map from every child to an
+already solved state. A coefficient bound alone does not imply a legal
+separator.
 
 In particular, the inequality `498 < 20^3` and the coefficient table do not by
 themselves supply the missing strategy. No closed 13-round protocol was

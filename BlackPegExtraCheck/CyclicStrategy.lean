@@ -267,6 +267,58 @@ theorem sep_fifteen_of_setupFibers_sep_five
     (Finset.univ : Finset TenElevenSecret) (cyclicSetupConsistent_zero _)
   exact result
 
+set_option maxHeartbeats 800000 in
+-- The ten nested `Sep` constructors otherwise exceed the default elaboration budget.
+/--
+Ten fixed cyclic rounds compose with any four-round solver for every exact
+setup fiber.  This is the formal endpoint needed by a checked universal
+nine-rook separator certificate.
+-/
+theorem sep_fourteen_of_setupFibers_sep_four
+    (finish : ∀ anchor : TenElevenSecret, Sep 4 (CyclicSetupFiber anchor)) :
+    Sep 14 (Finset.univ : Finset TenElevenSecret) := by
+  have auxiliary : ∀ remaining tested : Nat,
+      tested + remaining = 10 →
+      ∀ candidates : Finset TenElevenSecret,
+        CyclicSetupConsistent tested candidates →
+          Sep (remaining + 4) candidates := by
+    intro remaining
+    induction remaining with
+    | zero =>
+        intro tested total candidates consistent
+        have tested_eq : tested = 10 := by omega
+        subst tested
+        by_cases nonempty : candidates.Nonempty
+        · obtain ⟨anchor, anchor_mem⟩ := nonempty
+          apply Sep.mono (larger := CyclicSetupFiber anchor) ?_ (finish anchor)
+          intro secret secret_mem
+          rw [mem_cyclicSetupFiber]
+          constructor
+          · intro index
+            exact (consistent anchor anchor_mem secret secret_mem index (by omega)).1
+          · intro index
+            exact (consistent anchor anchor_mem secret secret_mem index (by omega)).2
+        · have empty : candidates = ∅ := Finset.not_nonempty_iff_eq_empty.mp nonempty
+          subst candidates
+          exact Sep.mono (Finset.empty_subset _) (finish (tenElevenCyclicGuess 0))
+    | succ remaining induction_hypothesis =>
+        intro tested total candidates consistent
+        have tested_lt : tested < 10 := by omega
+        have next_total : tested + 1 + remaining = 10 := by omega
+        have depth_eq : Nat.succ remaining + 4 = (remaining + 4) + 1 := by omega
+        rw [depth_eq, sep_succ_iff]
+        let current : Fin 10 := ⟨tested, tested_lt⟩
+        refine ⟨tenElevenCyclicGuess current.castSucc, ?_⟩
+        intro black
+        refine ⟨(0, current.castSucc), ?_, ?_⟩
+        · exact induction_hypothesis (tested + 1) next_total _
+            (cyclicSetupConsistent_succ_branch tested_lt consistent black true)
+        · exact induction_hypothesis (tested + 1) next_total _
+            (cyclicSetupConsistent_succ_branch tested_lt consistent black false)
+  have result := auxiliary 10 0 (by omega)
+    (Finset.univ : Finset TenElevenSecret) (cyclicSetupConsistent_zero _)
+  exact result
+
 /-! ## Exact cylindrical endgame statement -/
 
 /--
@@ -295,6 +347,15 @@ noncomputable def CylindricalFiber (anchor : TenElevenSecret)
 def EightRookCylindricalSepThree : Prop :=
   ∀ (anchor : TenElevenSecret) (fixed : Finset (Fin 10)),
     fixed.card = 2 → Sep 3 (CylindricalFiber anchor fixed)
+
+/--
+The precise universal statement needed for the direct fourteen-round route:
+after the ten cyclic setup rounds, one fixed field and the complete cylindrical
+profile leave a nine-rook fiber that must be separable in four legal rounds.
+-/
+def NineRookCylindricalSepFour : Prop :=
+  ∀ (anchor : TenElevenSecret) (fixed : Finset (Fin 10)),
+    fixed.card = 1 → Sep 4 (CylindricalFiber anchor fixed)
 
 /-- Every exact setup fiber lies in its one-fixed-field cylindrical fiber. -/
 theorem cyclicSetupFiber_subset_cylindricalFiber_zero
@@ -1224,5 +1285,19 @@ theorem exists_fifteenRoundStrategy_of_eightRookCylindricalSep
   intro anchor
   apply Sep.mono (cyclicSetupFiber_subset_cylindricalFiber_zero anchor)
   exact oneFixedCylindricalFiber_sep_five_of_eightRook endgame anchor
+
+/--
+Conditional endpoint for the fourteen-round route.  It intentionally remains
+conditional on `NineRookCylindricalSepFour`; the standalone verifier is not a
+Lean-kernel proof of that premise.
+-/
+theorem exists_fourteenRoundStrategy_of_nineRookCylindricalSep
+    (endgame : NineRookCylindricalSepFour) :
+    ∃ tree : TenElevenStrategy 14, tree.Solves Finset.univ := by
+  apply exists_strategy_of_sep
+  apply sep_fourteen_of_setupFibers_sep_four
+  intro anchor
+  apply Sep.mono (cyclicSetupFiber_subset_cylindricalFiber_zero anchor)
+  exact endgame anchor {0} (by simp)
 
 end BlackPegExtraCheck
