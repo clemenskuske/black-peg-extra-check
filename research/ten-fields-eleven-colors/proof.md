@@ -339,12 +339,23 @@ four-query finsets. This is not yet the required one-sixth inequality: it
 explains precisely why four-cycles alone provide only two of the five avoiding
 matchings needed per matching through the edge.
 
-Six-cycle insertion is the next layer. In the strongest sampled graph, direct
-four-cycle insertions are globally collision-free and the additional
-bad-shortcut six-cycle outputs have reverse multiplicity between three and
-six. The aggregate weighted count clears the factor-five target narrowly,
-but no universal inequality controlling that aggregate has yet been proved;
-the numerical observation is therefore not asserted in Lean.
+The natural six-cycle extension does not close the gap by itself. Let `C` be
+the matchings through the edge, `T4` the direct four-cycle incidences, and
+`T6` the six-cycle incidences whose endpoint shortcut is forbidden. Direct
+outputs have unique reverse images, while a bad-shortcut output has at most
+six. Therefore `6*T4 + T6 >= 30*C` would imply the desired factor five.
+The exact audit `switching_layer_counterexample.py` gives a seven-regular
+graph with
+
+```text
+P = 369,396,  C = 53,604,  T4 = 177,336,  T6 = 449,064,
+6*T4 + T6 = 1,513,080 < 1,608,120 = 30*C.
+```
+
+The actual marginal still obeys `6*C = 321,624 <= P`, so this refutes only
+the crude two-layer count, not the one-sixth conjecture. A successful
+switching proof must use longer cycles or exploit the exact reverse
+multiplicities instead of replacing all of them by the worst-case value six.
 
 This route presently covers the edge-disjoint query base. Overlapping query
 permutations require either a monotone compression to that case or a separate
