@@ -207,6 +207,14 @@ The Lean theorem `tenElevenLowerBoundNine_of_fourZeroFalse_large` kernel-checks
 this reduction from an arbitrary legal tree; it does not assume the desired
 lower bound.
 
+There is also a safe graph-theoretic bridge. Complete each of the four query
+injections to its unique permutation of eleven colors. Restricting a perfect
+matching of the completed avoidance graph back to ten rows is injective, so a
+universal completed permanent greater than 92,206 suffices. Lean checks the
+injection in `card_completedFourPathPerfectMatchings_le_fourZeroFalse` and the
+full game-tree implication in
+`tenElevenLowerBoundNine_of_completedFourPermanent_large`.
+
 The explicit degree-one obstruction used below has zero/false prefix counts
 
 ```text

@@ -224,6 +224,124 @@ theorem tenElevenLowerBoundNine_of_completedPermanent_large
     guess₀ guess₁ guess₂ guess₃ guess₄ edge₀ edge₁ edge₂ edge₃ edge₄
   exact permanentLarge.trans_le permanentLe
 
+/-! ## Perfect-matching bridge for the four-response reduction -/
+
+/-- The relation left after four completed queries and four ten-row edge checks. -/
+def completedFourPathAllowed
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11)
+    (row color : Fin 11) : Prop :=
+  (∀ t, color ≠ completeTenElevenSecret (guesses t) row) ∧
+    ∀ t, row = (edges t).1.castSucc → color ≠ (edges t).2
+
+/-- The four zero/false constraints expressed directly on ten-row secrets. -/
+noncomputable def FourZeroFalseVectorFinset
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) : Finset TenElevenSecret := by
+  classical
+  exact Finset.univ.filter fun secret =>
+    ∀ t, (∀ i, secret i ≠ guesses t i) ∧ secret (edges t).1 ≠ (edges t).2
+
+@[simp] theorem mem_FourZeroFalseVectorFinset
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) (secret : TenElevenSecret) :
+    secret ∈ FourZeroFalseVectorFinset guesses edges ↔
+      ∀ t, (∀ i, secret i ≠ guesses t i) ∧
+        secret (edges t).1 ≠ (edges t).2 := by
+  classical
+  simp [FourZeroFalseVectorFinset]
+
+/-- Restrict a four-path perfect matching to an actual surviving secret. -/
+noncomputable def restrictCompletedFourPathMatching
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) :
+    ↥(PerfectMatchingFinset (completedFourPathAllowed guesses edges)) →
+      ↥(FourZeroFalseVectorFinset guesses edges) := by
+  intro matching
+  refine ⟨restrictElevenPermutation matching.1, ?_⟩
+  rw [mem_FourZeroFalseVectorFinset]
+  intro t
+  have allowed := (mem_PerfectMatchingFinset
+    (completedFourPathAllowed guesses edges) matching.1).1 matching.2
+  constructor
+  · intro i
+    have avoids := (allowed i.castSucc).1 t
+    simpa [restrictElevenPermutation_apply] using avoids
+  · have avoids := (allowed (edges t).1.castSucc).2 t rfl
+    simpa [restrictElevenPermutation_apply] using avoids
+
+theorem restrictCompletedFourPathMatching_injective
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) :
+    Function.Injective (restrictCompletedFourPathMatching guesses edges) := by
+  intro σ τ restricted
+  apply Subtype.ext
+  apply restrictElevenPermutation_injective
+  exact congrArg Subtype.val restricted
+
+/-- The completed four-path permanent is a lower bound for its survivor state. -/
+theorem card_completedFourPathPerfectMatchings_le_survivors
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) :
+    (PerfectMatchingFinset (completedFourPathAllowed guesses edges)).card ≤
+      (FourZeroFalseVectorFinset guesses edges).card := by
+  rw [← Fintype.card_coe, ← Fintype.card_coe]
+  exact Fintype.card_le_of_injective
+    (restrictCompletedFourPathMatching guesses edges)
+    (restrictCompletedFourPathMatching_injective guesses edges)
+
+/-- The vector presentation maps into the four-step state used by the game tree. -/
+theorem fourZeroFalseVectorFinset_tuple_subset
+    (guess₀ guess₁ guess₂ guess₃ : TenElevenSecret)
+    (edge₀ edge₁ edge₂ edge₃ : Fin 10 × Fin 11) :
+    FourZeroFalseVectorFinset
+        (![guess₀, guess₁, guess₂, guess₃] : Fin 4 → TenElevenSecret)
+        (![edge₀, edge₁, edge₂, edge₃] : Fin 4 → Fin 10 × Fin 11) ⊆
+      FourZeroFalseFinset guess₀ guess₁ guess₂ guess₃ edge₀ edge₁ edge₂ edge₃ := by
+  classical
+  intro secret hsecret
+  rw [mem_FourZeroFalseVectorFinset] at hsecret
+  have h₀ := hsecret (0 : Fin 4)
+  have h₁ := hsecret (1 : Fin 4)
+  have h₂ := hsecret (2 : Fin 4)
+  have h₃ := hsecret (3 : Fin 4)
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at h₀ h₁ h₂ h₃
+  simpa [FourZeroFalseFinset, and_assoc] using
+    And.intro (And.intro (And.intro h₀ h₁) h₂) h₃
+
+/-- The completed-permanent lower bound for the four-step game state. -/
+theorem card_completedFourPathPerfectMatchings_le_fourZeroFalse
+    (guess₀ guess₁ guess₂ guess₃ : TenElevenSecret)
+    (edge₀ edge₁ edge₂ edge₃ : Fin 10 × Fin 11) :
+    (PerfectMatchingFinset (completedFourPathAllowed
+      (![guess₀, guess₁, guess₂, guess₃] : Fin 4 → TenElevenSecret)
+      (![edge₀, edge₁, edge₂, edge₃] : Fin 4 → Fin 10 × Fin 11))).card ≤
+      (FourZeroFalseFinset guess₀ guess₁ guess₂ guess₃
+        edge₀ edge₁ edge₂ edge₃).card := by
+  exact (card_completedFourPathPerfectMatchings_le_survivors _ _).trans
+    (Finset.card_le_card (fourZeroFalseVectorFinset_tuple_subset
+      guess₀ guess₁ guess₂ guess₃ edge₀ edge₁ edge₂ edge₃))
+
+/-- Safe lower-nine bridge stated as a universal four-path permanent inequality. -/
+theorem tenElevenLowerBoundNine_of_completedFourPermanent_large
+    (completedPermanentLarge :
+      ∀ (guesses : Fin 4 → TenElevenSecret)
+        (edges : Fin 4 → Fin 10 × Fin 11),
+        92206 <
+          (PerfectMatchingFinset
+            (completedFourPathAllowed guesses edges)).card)
+    (tree : TenElevenStrategy 8) (solves : tree.Solves Finset.univ) : False := by
+  apply tenElevenLowerBoundNine_of_fourZeroFalse_large ?_ tree solves
+  intro guess₀ guess₁ guess₂ guess₃ edge₀ edge₁ edge₂ edge₃
+  let guesses : Fin 4 → TenElevenSecret :=
+    ![guess₀, guess₁, guess₂, guess₃]
+  let edges : Fin 4 → Fin 10 × Fin 11 :=
+    ![edge₀, edge₁, edge₂, edge₃]
+  have permanentLarge := completedPermanentLarge guesses edges
+  have permanentLe := card_completedFourPathPerfectMatchings_le_fourZeroFalse
+    guess₀ guess₁ guess₂ guess₃ edge₀ edge₁ edge₂ edge₃
+  exact permanentLarge.trans_le permanentLe
+
 /-! ## Five-regular subrelations and the numerical threshold -/
 
 /-- The number of allowed edges from `rows` to `colors`. -/

@@ -53,6 +53,9 @@ of a possible ninth-round lower bound to either of two concrete intersection
 inequalities: more than 92,206 survivors after four zero/false rounds, or more
 than 6,370 after five. The explicit obstruction below has prefix counts 199,926
 and 10,404, respectively, but those computations are not universal proofs.
+Both routes now have kernel-checked injections from completed-path perfect
+matchings into the real survivor states, reducing them to clean permanent
+inequalities.
 For the five-round route the project formalizes the safe perfect-matching
 bridge, the necessary five-factor cut inequality, the six-regular small-defect
 reduction, and an explicit degree-one obstruction showing that a five-factor
