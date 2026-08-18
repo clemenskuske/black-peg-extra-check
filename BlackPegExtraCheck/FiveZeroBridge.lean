@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Clemens Kuske, OpenAI Codex
 -/
 import BlackPegExtraCheck.TenFieldsElevenColors
+import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Data.Fin.VecNotation
@@ -346,6 +347,131 @@ theorem tenElevenLowerBoundNine_of_completedFourPermanent_large
   have permanentLe := card_completedFourPathPerfectMatchings_le_fourZeroFalse
     guess₀ guess₁ guess₂ guess₃ edge₀ edge₁ edge₂ edge₃
   exact permanentLarge.trans_le permanentLe
+
+/-! ## A four-edge marginal reduction -/
+
+/-- The completed graph after four zero answers, before the four checks. -/
+def completedFourQueriesAllowed
+    (guesses : Fin 4 → TenElevenSecret) (row color : Fin 11) : Prop :=
+  ∀ t, color ≠ completeTenElevenSecret (guesses t) row
+
+/-- Query-only perfect matchings that use the edge tested in round `t`. -/
+noncomputable def FourPathCheckedEdgeUseFinset
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) (t : Fin 4) :
+    Finset (Equiv.Perm (Fin 11)) := by
+  classical
+  exact (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).filter
+    fun σ => σ (edges t).1.castSucc = (edges t).2
+
+@[simp] theorem mem_FourPathCheckedEdgeUseFinset
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) (t : Fin 4)
+    (σ : Equiv.Perm (Fin 11)) :
+    σ ∈ FourPathCheckedEdgeUseFinset guesses edges t ↔
+      (∀ row, completedFourQueriesAllowed guesses row (σ row)) ∧
+        σ (edges t).1.castSucc = (edges t).2 := by
+  classical
+  simp [FourPathCheckedEdgeUseFinset]
+
+/--
+Every query-only perfect matching either survives all four false checks or
+uses at least one of the four checked edges.
+-/
+theorem queryPerfectMatchings_subset_path_union_checkedEdgeUses
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) :
+    PerfectMatchingFinset (completedFourQueriesAllowed guesses) ⊆
+      PerfectMatchingFinset (completedFourPathAllowed guesses edges) ∪
+        Finset.univ.biUnion (FourPathCheckedEdgeUseFinset guesses edges) := by
+  classical
+  intro σ queryMem
+  by_cases pathMem : σ ∈
+      PerfectMatchingFinset (completedFourPathAllowed guesses edges)
+  · exact Finset.mem_union_left _ pathMem
+  · apply Finset.mem_union_right
+    rw [mem_PerfectMatchingFinset] at queryMem pathMem
+    push Not at pathMem
+    obtain ⟨row, pathFailure⟩ := pathMem
+    have queryAllowed : completedFourQueriesAllowed guesses row (σ row) :=
+      queryMem row
+    have checkFailure : ¬∀ t,
+        row = (edges t).1.castSucc → σ row ≠ (edges t).2 := by
+      intro checksAllowed
+      exact pathFailure ⟨queryAllowed, checksAllowed⟩
+    push Not at checkFailure
+    obtain ⟨t, rowEq, colorEq⟩ := checkFailure
+    rw [Finset.mem_biUnion]
+    refine ⟨t, Finset.mem_univ t, ?_⟩
+    rw [mem_FourPathCheckedEdgeUseFinset]
+    refine ⟨queryMem, ?_⟩
+    simpa [← rowEq] using colorEq
+
+/-- Cardinality union bound for the four checked-edge losses. -/
+theorem card_queryPerfectMatchings_le_path_add_checkedEdgeUses
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11) :
+    (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card ≤
+      (PerfectMatchingFinset (completedFourPathAllowed guesses edges)).card +
+        ∑ t, (FourPathCheckedEdgeUseFinset guesses edges t).card := by
+  classical
+  let survivors := PerfectMatchingFinset (completedFourPathAllowed guesses edges)
+  let losses := Finset.univ.biUnion (FourPathCheckedEdgeUseFinset guesses edges)
+  calc
+    (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card ≤
+        (survivors ∪ losses).card :=
+      Finset.card_le_card
+        (queryPerfectMatchings_subset_path_union_checkedEdgeUses guesses edges)
+    _ ≤ survivors.card + losses.card := Finset.card_union_le _ _
+    _ ≤ survivors.card +
+        ∑ t, (FourPathCheckedEdgeUseFinset guesses edges t).card := by
+      exact Nat.add_le_add_left Finset.card_biUnion_le survivors.card
+
+/--
+If each checked edge occurs in at most one sixth of the query-only perfect
+matchings, the four false answers retain more than the four-round capacity.
+The numerical margin is seven matchings.
+-/
+theorem card_completedFourPath_large_of_queryLarge_and_edgeMarginals
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11)
+    (queryLarge : 276640 ≤
+      (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card)
+    (edgeMarginal : ∀ t,
+      6 * (FourPathCheckedEdgeUseFinset guesses edges t).card ≤
+        (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card) :
+    92206 <
+      (PerfectMatchingFinset (completedFourPathAllowed guesses edges)).card := by
+  have cover := card_queryPerfectMatchings_le_path_add_checkedEdgeUses guesses edges
+  have sumEdges :
+      6 * ∑ t, (FourPathCheckedEdgeUseFinset guesses edges t).card ≤
+        4 * (PerfectMatchingFinset
+          (completedFourQueriesAllowed guesses)).card := by
+    calc
+      6 * ∑ t, (FourPathCheckedEdgeUseFinset guesses edges t).card =
+          ∑ t, 6 * (FourPathCheckedEdgeUseFinset guesses edges t).card := by
+        rw [Finset.mul_sum]
+      _ ≤ ∑ _t : Fin 4,
+          (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card :=
+        Finset.sum_le_sum fun t _ht => edgeMarginal t
+      _ = 4 * (PerfectMatchingFinset
+          (completedFourQueriesAllowed guesses)).card := by simp
+  omega
+
+/-- End-to-end lower-nine reduction through the query permanent and edge marginals. -/
+theorem tenElevenLowerBoundNine_of_queryLarge_and_edgeMarginals
+    (queryLarge : ∀ guesses : Fin 4 → TenElevenSecret,
+      276640 ≤
+        (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card)
+    (edgeMarginal : ∀ (guesses : Fin 4 → TenElevenSecret)
+        (edges : Fin 4 → Fin 10 × Fin 11) (t : Fin 4),
+      6 * (FourPathCheckedEdgeUseFinset guesses edges t).card ≤
+        (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card)
+    (tree : TenElevenStrategy 8) (solves : tree.Solves Finset.univ) : False := by
+  apply tenElevenLowerBoundNine_of_completedFourPermanent_large ?_ tree solves
+  intro guesses edges
+  exact card_completedFourPath_large_of_queryLarge_and_edgeMarginals
+    guesses edges (queryLarge guesses) (edgeMarginal guesses edges)
 
 /-! ## Five-regular subrelations and the numerical threshold -/
 

@@ -64,7 +64,11 @@ the analogous seven-regular/six-factor defect arithmetic: after at most four
 deletions, a violated six-factor cut has excess only `1`, `2`, or `3`. A
 kernel-checked nonempty four-query/four-check example has one color of degree
 three, proving that a universal six-factor shortcut is false and that the
-exceptional cuts must be counted directly. The corresponding Lean lemmas are in
+exceptional cuts must be counted directly. A second kernel-checked reduction
+shows that the four-path permanent follows if the query-only graph has at
+least 276,640 perfect matchings and each checked edge occurs in at most one
+sixth of them; the resulting arithmetic clears 92,206 by seven. The edge-
+marginal inequality itself remains open. The corresponding Lean lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean)
 and
 [`BlackPegExtraCheck/FiveZeroBridge.lean`](BlackPegExtraCheck/FiveZeroBridge.lean);

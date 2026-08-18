@@ -285,6 +285,43 @@ six-factor. The Lean results are
 `sixFactorObstruction_color_degree_three`, and
 `sixFactorObstruction_no_sixRegular`.
 
+#### A one-sixth edge-marginal route
+
+In the edge-disjoint query case, let `G` be the seven-regular query-only
+avoidance graph, and let `P` be its set of perfect matchings. For a checked
+edge `e`, write `P_e` for the matchings that use `e`. The union bound gives
+
+```text
+|P after four false checks| >= |P| - sum_e |P_e|.
+```
+
+Consequently the two inequalities
+
+```text
+|P| >= 276,640,                 6 * |P_e| <= |P| for each check
+```
+
+would imply that at least one third of `P` survives. Since
+`276,640 / 3 > 92,206`, this closes (4), with a margin of seven matchings.
+Lean checks the exact finite-set union argument and arithmetic in
+`card_completedFourPath_large_of_queryLarge_and_edgeMarginals`, and the full
+strategy-tree implication in
+`tenElevenLowerBoundNine_of_queryLarge_and_edgeMarginals`; the regular
+permanent bound and the edge-marginal inequality remain explicit premises.
+
+The edge-marginal statement is a focused switching target: for a seven-
+regular bipartite graph it asks whether a fixed edge belongs to at most one
+sixth of all perfect matchings. Exact subset-DP hill searches on the
+eleven-by-eleven class found largest sampled ratios below `0.148`, versus
+`1/6 = 0.166...`, but this is only discovery evidence. No injection or
+published theorem establishing the inequality has been found, so it is not
+asserted in Lean or used as an external premise.
+
+This route presently covers the edge-disjoint query base. Overlapping query
+permutations require either a monotone compression to that case or a separate
+query-only permanent/marginal argument. Thus the exact remaining tasks are a
+proof of the one-sixth switching inequality and a sound overlap reduction.
+
 ### Five zero/false responses: a checked reduction toward nine
 
 There is a more promising state-dependent route that does not collapse the
