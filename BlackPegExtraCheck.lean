@@ -2,5 +2,6 @@ import BlackPegExtraCheck.DecisionTree
 import BlackPegExtraCheck.TenFieldsElevenColors
 import BlackPegExtraCheck.FiveZeroBridge
 import BlackPegExtraCheck.Separator
+import BlackPegExtraCheck.SeparatorTransport
 import BlackPegExtraCheck.CyclicStrategy
 import BlackPegExtraCheck.SharpEightRookCertificate
