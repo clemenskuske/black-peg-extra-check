@@ -317,6 +317,35 @@ eleven-by-eleven class found largest sampled ratios below `0.148`, versus
 published theorem establishing the inequality has been found, so it is not
 asserted in Lean or used as an external premise.
 
+There is now a kernel-checked first switching layer. Fix a perfect matching
+`sigma` that uses the tested edge `u-v`. Among the six other neighbors of
+`u` and the six other neighbors of `v`, viewed through `sigma`, at least two
+rows overlap because both are six-element subsets of the remaining ten rows.
+Swapping the two matching edges on any such row is a legal four-cycle switch
+that avoids `u-v`. Moreover, the switched matching uniquely determines the
+old row: it is the unique row now matched to `v`. It then uniquely recovers
+`sigma` by swapping those two rows back. Thus
+
+```text
+2 * |P_e| <= |P minus P_e|,
+3 * |P_e| <= |P|.
+```
+
+Lean checks the neighbor-set intersection, constructs two selected switches,
+proves that the switching map is injective, and derives the cardinal bound in
+`three_mul_card_regularEdgeUse_le_all`. The specialization
+`three_mul_card_fourPathCheckedEdgeUse_le_query` connects it to the actual
+four-query finsets. This is not yet the required one-sixth inequality: it
+explains precisely why four-cycles alone provide only two of the five avoiding
+matchings needed per matching through the edge.
+
+Six-cycle insertion is the next layer. In the strongest sampled graph, direct
+four-cycle insertions are globally collision-free and the additional
+bad-shortcut six-cycle outputs have reverse multiplicity between three and
+six. The aggregate weighted count clears the factor-five target narrowly,
+but no universal inequality controlling that aggregate has yet been proved;
+the numerical observation is therefore not asserted in Lean.
+
 This route presently covers the edge-disjoint query base. Overlapping query
 permutations require either a monotone compression to that case or a separate
 query-only permanent/marginal argument. Thus the exact remaining tasks are a

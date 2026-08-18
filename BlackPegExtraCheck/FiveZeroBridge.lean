@@ -490,6 +490,307 @@ def IsSpanningRegular (degree : Nat) (allowed : Fin 11 → Fin 11 → Prop) : Pr
 def IsSubrelation (smaller larger : Fin 11 → Fin 11 → Prop) : Prop :=
   ∀ ⦃row color⦄, smaller row color → larger row color
 
+/-! ## A collision-free four-cycle switching bound -/
+
+/-- Swap the two rows of a permutation while leaving its colors fixed. -/
+noncomputable def swapPermutationRows (σ : Equiv.Perm (Fin 11))
+    (row other : Fin 11) : Equiv.Perm (Fin 11) :=
+  (Equiv.swap row other).trans σ
+
+@[simp] theorem swapPermutationRows_apply_left
+    (σ : Equiv.Perm (Fin 11)) (row other : Fin 11) :
+    swapPermutationRows σ row other row = σ other := by
+  simp [swapPermutationRows]
+
+@[simp] theorem swapPermutationRows_apply_right
+    (σ : Equiv.Perm (Fin 11)) (row other : Fin 11) :
+    swapPermutationRows σ row other other = σ row := by
+  simp [swapPermutationRows]
+
+@[simp] theorem swapPermutationRows_involutive
+    (σ : Equiv.Perm (Fin 11)) (row other : Fin 11) :
+    swapPermutationRows (swapPermutationRows σ row other) row other = σ := by
+  ext current
+  simp [swapPermutationRows]
+
+/-- Colors allowed at one row. -/
+noncomputable def rowNeighborFinset (allowed : Fin 11 → Fin 11 → Prop)
+    (row : Fin 11) : Finset (Fin 11) := by
+  classical
+  exact Finset.univ.filter (allowed row)
+
+/-- Rows allowing one color. -/
+noncomputable def colorNeighborFinset (allowed : Fin 11 → Fin 11 → Prop)
+    (color : Fin 11) : Finset (Fin 11) := by
+  classical
+  exact Finset.univ.filter fun row => allowed row color
+
+theorem bipartiteEdgeCount_singleton_row
+    (allowed : Fin 11 → Fin 11 → Prop) (row : Fin 11) :
+    bipartiteEdgeCount allowed {row} Finset.univ =
+      (rowNeighborFinset allowed row).card := by
+  classical
+  simp [bipartiteEdgeCount, rowNeighborFinset]
+
+theorem bipartiteEdgeCount_singleton_color
+    (allowed : Fin 11 → Fin 11 → Prop) (color : Fin 11) :
+    bipartiteEdgeCount allowed Finset.univ {color} =
+      (colorNeighborFinset allowed color).card := by
+  classical
+  simp only [bipartiteEdgeCount, Finset.sum_singleton]
+  rw [Finset.card_eq_sum_ones]
+  change (∑ row, if allowed row color then 1 else 0) =
+    ∑ row ∈ Finset.univ.filter (fun row => allowed row color), 1
+  rw [Finset.sum_filter]
+
+/-- Pull the colors allowed at `row` back through a permutation. -/
+noncomputable def permutedRowNeighborFinset
+    (allowed : Fin 11 → Fin 11 → Prop) (row : Fin 11)
+    (σ : Equiv.Perm (Fin 11)) : Finset (Fin 11) := by
+  classical
+  exact Finset.univ.filter fun other => allowed row (σ other)
+
+theorem card_permutedRowNeighborFinset
+    (allowed : Fin 11 → Fin 11 → Prop) (row : Fin 11)
+    (σ : Equiv.Perm (Fin 11)) :
+    (permutedRowNeighborFinset allowed row σ).card =
+      (rowNeighborFinset allowed row).card := by
+  classical
+  apply Finset.card_bij (fun other _ => σ other)
+  · intro other membership
+    simpa [permutedRowNeighborFinset, rowNeighborFinset] using membership
+  · intro first _ second _ equal
+    exact σ.injective equal
+  · intro color membership
+    refine ⟨σ.symm color, ?_, by simp⟩
+    simpa [permutedRowNeighborFinset, rowNeighborFinset] using membership
+
+/-- Rows at which swapping a matching edge with `row-color` is legal. -/
+noncomputable def goodSwitchRowFinset
+    (allowed : Fin 11 → Fin 11 → Prop) (row color : Fin 11)
+    (σ : Equiv.Perm (Fin 11)) : Finset (Fin 11) := by
+  classical
+  exact ((colorNeighborFinset allowed color) ∩
+    (permutedRowNeighborFinset allowed row σ)).erase row
+
+/--
+A matching using an edge of a seven-regular graph has at least two legal
+four-cycle switches away from that edge.  The two size-seven neighbor sets
+meet in at least three of the eleven rows, one of which is `row` itself.
+-/
+theorem card_goodSwitchRowFinset_at_least_two
+    (allowed : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed)
+    (row color : Fin 11) (σ : Equiv.Perm (Fin 11))
+    (edge : allowed row color) (uses : σ row = color) :
+    2 ≤ (goodSwitchRowFinset allowed row color σ).card := by
+  classical
+  have rowCard : (rowNeighborFinset allowed row).card = 7 := by
+    rw [← bipartiteEdgeCount_singleton_row]
+    exact regular.1 row
+  have colorCard : (colorNeighborFinset allowed color).card = 7 := by
+    rw [← bipartiteEdgeCount_singleton_color]
+    exact regular.2 color
+  have permutedCard :
+      (permutedRowNeighborFinset allowed row σ).card = 7 := by
+    rw [card_permutedRowNeighborFinset, rowCard]
+  let both := (colorNeighborFinset allowed color) ∩
+    (permutedRowNeighborFinset allowed row σ)
+  have unionCard : ((colorNeighborFinset allowed color) ∪
+      (permutedRowNeighborFinset allowed row σ)).card ≤ 11 := by
+    calc
+      _ ≤ (Finset.univ : Finset (Fin 11)).card :=
+        Finset.card_le_card (Finset.subset_univ _)
+      _ = 11 := by decide
+  have bothCard : 3 ≤ both.card := by
+    have identity := Finset.card_inter_add_card_union
+      (colorNeighborFinset allowed color)
+      (permutedRowNeighborFinset allowed row σ)
+    dsimp [both]
+    omega
+  have rowMem : row ∈ both := by
+    simp [both, colorNeighborFinset, permutedRowNeighborFinset, edge, uses]
+  simp only [goodSwitchRowFinset]
+  rw [Finset.card_erase_of_mem rowMem]
+  omega
+
+/-- Perfect matchings using a specified allowed edge. -/
+noncomputable def regularEdgeUseFinset (allowed : Fin 11 → Fin 11 → Prop)
+    (row color : Fin 11) : Finset (Equiv.Perm (Fin 11)) := by
+  classical
+  exact (PerfectMatchingFinset allowed).filter fun σ => σ row = color
+
+/-- Perfect matchings avoiding a specified edge. -/
+noncomputable def regularEdgeAvoidFinset (allowed : Fin 11 → Fin 11 → Prop)
+    (row color : Fin 11) : Finset (Equiv.Perm (Fin 11)) := by
+  classical
+  exact (PerfectMatchingFinset allowed).filter fun σ => σ row ≠ color
+
+@[simp] theorem mem_regularEdgeUseFinset
+    (allowed : Fin 11 → Fin 11 → Prop) (row color : Fin 11)
+    (σ : Equiv.Perm (Fin 11)) :
+    σ ∈ regularEdgeUseFinset allowed row color ↔
+      (∀ current, allowed current (σ current)) ∧ σ row = color := by
+  classical
+  simp [regularEdgeUseFinset]
+
+@[simp] theorem mem_regularEdgeAvoidFinset
+    (allowed : Fin 11 → Fin 11 → Prop) (row color : Fin 11)
+    (σ : Equiv.Perm (Fin 11)) :
+    σ ∈ regularEdgeAvoidFinset allowed row color ↔
+      (∀ current, allowed current (σ current)) ∧ σ row ≠ color := by
+  classical
+  simp [regularEdgeAvoidFinset]
+
+noncomputable def chooseGoodSwitchRows
+    (allowed : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed) (row color : Fin 11)
+    (edge : allowed row color)
+    (σ : ↥(regularEdgeUseFinset allowed row color)) : Fin 2 ↪
+      ↥(goodSwitchRowFinset allowed row color σ.1) := by
+  classical
+  exact Classical.choice (Function.Embedding.nonempty_of_card_le (by
+    simpa using card_goodSwitchRowFinset_at_least_two allowed regular
+      row color σ.1 edge
+        ((mem_regularEdgeUseFinset allowed row color σ.1).mp σ.2).2))
+
+/-- Switch one of two selected four-cycles away from the specified edge. -/
+noncomputable def fourCycleSwitchMap
+    (allowed : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed) (row color : Fin 11)
+    (edge : allowed row color) :
+    (↥(regularEdgeUseFinset allowed row color) × Fin 2) →
+      ↥(regularEdgeAvoidFinset allowed row color) := by
+  classical
+  intro source
+  let σ := source.1.1
+  let other :=
+    (chooseGoodSwitchRows allowed regular row color edge source.1 source.2).1
+  have σMem := (mem_regularEdgeUseFinset allowed row color σ).mp source.1.2
+  have otherMem :=
+    (chooseGoodSwitchRows allowed regular row color edge source.1 source.2).2
+  have otherFacts :
+      other ≠ row ∧ allowed other color ∧ allowed row (σ other) := by
+    change other ∈ goodSwitchRowFinset allowed row color σ at otherMem
+    simpa only [goodSwitchRowFinset, Finset.mem_erase, Finset.mem_inter,
+      colorNeighborFinset, permutedRowNeighborFinset, Finset.mem_filter,
+      Finset.mem_univ, true_and] using otherMem
+  refine ⟨swapPermutationRows σ row other, ?_⟩
+  rw [mem_regularEdgeAvoidFinset]
+  constructor
+  · intro current
+    by_cases currentRow : current = row
+    · subst current
+      simpa [swapPermutationRows] using otherFacts.2.2
+    · by_cases currentOther : current = other
+      · subst current
+        simpa [swapPermutationRows, σMem.2] using otherFacts.2.1
+      · simpa [swapPermutationRows,
+          Equiv.swap_apply_of_ne_of_ne currentRow currentOther] using σMem.1 current
+  · rw [swapPermutationRows_apply_left]
+    intro equal
+    apply otherFacts.1
+    apply σ.injective
+    simpa [σMem.2] using equal
+
+/-- The four-cycle switch remembers its unique original matching and row. -/
+theorem fourCycleSwitchMap_injective
+    (allowed : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed) (row color : Fin 11)
+    (edge : allowed row color) :
+    Function.Injective (fourCycleSwitchMap allowed regular row color edge) := by
+  classical
+  rintro ⟨σ, first⟩ ⟨τ, second⟩ switchedEqual
+  let other := (chooseGoodSwitchRows allowed regular row color edge σ first).1
+  let another := (chooseGoodSwitchRows allowed regular row color edge τ second).1
+  have σMem := (mem_regularEdgeUseFinset allowed row color σ.1).mp σ.2
+  have τMem := (mem_regularEdgeUseFinset allowed row color τ.1).mp τ.2
+  have switchedValEqual :
+      swapPermutationRows σ.1 row other =
+        swapPermutationRows τ.1 row another :=
+    congrArg Subtype.val switchedEqual
+  have otherMaps : swapPermutationRows σ.1 row other other = color := by
+    simp [swapPermutationRows, σMem.2]
+  have anotherMaps :
+      swapPermutationRows τ.1 row another another = color := by
+    simp [swapPermutationRows, τMem.2]
+  have otherEqual : other = another := by
+    apply (swapPermutationRows σ.1 row other).injective
+    calc
+      swapPermutationRows σ.1 row other other = color := otherMaps
+      _ = swapPermutationRows τ.1 row another another := anotherMaps.symm
+      _ = swapPermutationRows σ.1 row other another := by rw [switchedValEqual]
+  have σEqualsτ : σ.1 = τ.1 := by
+    have switchedAgain := congrArg
+      (fun permutation => swapPermutationRows permutation row other)
+      switchedValEqual
+    simpa [otherEqual] using switchedAgain
+  have σSubtype : σ = τ := Subtype.ext σEqualsτ
+  subst τ
+  have indicesEqual : first = second := by
+    apply (chooseGoodSwitchRows allowed regular row color edge σ).injective
+    apply Subtype.ext
+    exact otherEqual
+  exact Prod.ext rfl indicesEqual
+
+/-- Every matching using the edge produces two distinct avoiding matchings. -/
+theorem twice_card_regularEdgeUse_le_avoid
+    (allowed : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed) (row color : Fin 11)
+    (edge : allowed row color) :
+    2 * (regularEdgeUseFinset allowed row color).card ≤
+      (regularEdgeAvoidFinset allowed row color).card := by
+  have cardLe := Fintype.card_le_of_injective
+    (fourCycleSwitchMap allowed regular row color edge)
+    (fourCycleSwitchMap_injective allowed regular row color edge)
+  simpa [Fintype.card_prod, Nat.mul_comm] using cardLe
+
+/-- A fixed edge occurs in at most one third of all perfect matchings. -/
+theorem three_mul_card_regularEdgeUse_le_all
+    (allowed : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed) (row color : Fin 11)
+    (edge : allowed row color) :
+    3 * (regularEdgeUseFinset allowed row color).card ≤
+      (PerfectMatchingFinset allowed).card := by
+  have switches := twice_card_regularEdgeUse_le_avoid allowed regular row color edge
+  have partition := Finset.card_filter_add_card_filter_not
+    (s := PerfectMatchingFinset allowed) (fun σ => σ row = color)
+  change (regularEdgeUseFinset allowed row color).card +
+      (regularEdgeAvoidFinset allowed row color).card =
+      (PerfectMatchingFinset allowed).card at partition
+  omega
+
+/-- The generic one-third switching theorem at the four-query interface. -/
+theorem three_mul_card_fourPathCheckedEdgeUse_le_query
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11)
+    (regular : IsSpanningRegular 7 (completedFourQueriesAllowed guesses))
+    (t : Fin 4) :
+    3 * (FourPathCheckedEdgeUseFinset guesses edges t).card ≤
+      (PerfectMatchingFinset (completedFourQueriesAllowed guesses)).card := by
+  let row := (edges t).1.castSucc
+  let color := (edges t).2
+  have useEq : FourPathCheckedEdgeUseFinset guesses edges t =
+      regularEdgeUseFinset (completedFourQueriesAllowed guesses) row color := by
+    ext σ
+    simp [row, color, regularEdgeUseFinset]
+  rw [useEq]
+  by_cases edgeAllowed : completedFourQueriesAllowed guesses row color
+  · exact three_mul_card_regularEdgeUse_le_all
+      (completedFourQueriesAllowed guesses) regular row color edgeAllowed
+  · have noUse :
+        regularEdgeUseFinset (completedFourQueriesAllowed guesses) row color = ∅ := by
+      ext σ
+      rw [mem_regularEdgeUseFinset]
+      constructor
+      · rintro ⟨matchingAllowed, uses⟩
+        exfalso
+        apply edgeAllowed
+        simpa [uses] using matchingAllowed row
+      · intro impossible
+        simp at impossible
+    simp [noUse]
+
 /-- A five-factor is a five-regular spanning subrelation. -/
 def HasFiveFactor (allowed : Fin 11 → Fin 11 → Prop) : Prop :=
   ∃ regular : Fin 11 → Fin 11 → Prop,
