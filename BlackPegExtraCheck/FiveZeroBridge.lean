@@ -27,10 +27,15 @@ The file also records two exact downstream reductions.
   after at most five edge deletions, its excess
   `s = |X| + |Y| - 11` lies in `{1,2,3,4}` and at least `s+1` deleted edges
   lie in the cut.
+* Likewise, failure of the six-factor cut inequality after at most four
+  deletions from a seven-regular graph has excess `s` in `{1,2,3}`.
+  A concrete four-query/four-check state shows that the `s = 1` exception is
+  real: one color can have degree three, so a universal six-factor shortcut
+  is false even though the state is nonempty.
 
 No converse to the five-factor cut criterion and no permanent inequality are
-assumed globally here.  The theorem using the permanent bound takes that
-inequality as an explicit premise.
+assumed globally here.  The same applies to the six-factor cut criterion.  The
+theorem using the permanent bound takes that inequality as an explicit premise.
 -/
 
 namespace BlackPegExtraCheck
@@ -364,6 +369,11 @@ def HasFiveFactor (allowed : Fin 11 → Fin 11 → Prop) : Prop :=
   ∃ regular : Fin 11 → Fin 11 → Prop,
     IsSpanningRegular 5 regular ∧ IsSubrelation regular allowed
 
+/-- A six-factor is a six-regular spanning subrelation. -/
+def HasSixFactor (allowed : Fin 11 → Fin 11 → Prop) : Prop :=
+  ∃ regular : Fin 11 → Fin 11 → Prop,
+    IsSpanningRegular 6 regular ∧ IsSubrelation regular allowed
+
 theorem perfectMatchingFinset_mono {smaller larger : Fin 11 → Fin 11 → Prop}
     (subset : IsSubrelation smaller larger) :
     PerfectMatchingFinset smaller ⊆ PerfectMatchingFinset larger := by
@@ -389,6 +399,18 @@ theorem bipartiteEdgeCount_mono_relation
   · simp [hsmall, subset hsmall]
   · simp [hsmall]
 
+theorem no_regular_subrelation_of_color_degree_lt
+    (degree : Nat) (allowed : Fin 11 → Fin 11 → Prop) (color : Fin 11)
+    (smallDegree :
+      bipartiteEdgeCount allowed Finset.univ {color} < degree) :
+    ¬∃ regular : Fin 11 → Fin 11 → Prop,
+      IsSpanningRegular degree regular ∧ IsSubrelation regular allowed := by
+  rintro ⟨regular, spanningRegular, contained⟩
+  have monotone := bipartiteEdgeCount_mono_relation contained
+    Finset.univ {color}
+  rw [spanningRegular.2 color] at monotone
+  omega
+
 theorem no_fiveRegular_subrelation_of_color_degree_lt_five
     (allowed : Fin 11 → Fin 11 → Prop) (color : Fin 11)
     (smallDegree :
@@ -406,6 +428,42 @@ theorem permanent_five_regular_threshold {permanent : Nat}
     (bound : 5 ^ 11 * Nat.factorial 11 ≤ permanent * 11 ^ 11) :
     6832 ≤ permanent := by
   norm_num [Nat.factorial] at bound ⊢
+  omega
+
+/-- The degree-six permanent inequality only forces 50,758 matchings. -/
+theorem permanent_six_regular_threshold {permanent : Nat}
+    (bound : 6 ^ 11 * Nat.factorial 11 ≤ permanent * 11 ^ 11) :
+    50758 ≤ permanent := by
+  norm_num [Nat.factorial] at bound ⊢
+  omega
+
+/-- The degree-seven permanent inequality forces 276,640 matchings. -/
+theorem permanent_seven_regular_threshold {permanent : Nat}
+    (bound : 7 ^ 11 * Nat.factorial 11 ≤ permanent * 11 ^ 11) :
+    276640 ≤ permanent := by
+  norm_num [Nat.factorial] at bound ⊢
+  omega
+
+/--
+A seven-regular spanning subrelation of a four-path graph proves the desired
+survivor inequality once its standard permanent inequality is supplied.
+-/
+theorem card_fourZeroFalseVector_large_of_sevenRegular
+    (guesses : Fin 4 → TenElevenSecret)
+    (edges : Fin 4 → Fin 10 × Fin 11)
+    (regular : Fin 11 → Fin 11 → Prop)
+    (_sevenRegular : IsSpanningRegular 7 regular)
+    (contained : IsSubrelation regular (completedFourPathAllowed guesses edges))
+    (permanentBound :
+      7 ^ 11 * Nat.factorial 11 ≤
+        (PerfectMatchingFinset regular).card * 11 ^ 11) :
+    92206 < (FourZeroFalseVectorFinset guesses edges).card := by
+  have regularLarge : 276640 ≤ (PerfectMatchingFinset regular).card :=
+    permanent_seven_regular_threshold permanentBound
+  have completedLe : (PerfectMatchingFinset regular).card ≤
+      (PerfectMatchingFinset (completedFourPathAllowed guesses edges)).card :=
+    Finset.card_le_card (perfectMatchingFinset_mono contained)
+  have survivorLe := card_completedFourPathPerfectMatchings_le_survivors guesses edges
   omega
 
 /--
@@ -556,6 +614,80 @@ theorem fiveFactorObstruction_no_fiveRegular :
   rw [fiveFactorObstruction_color_degree_one]
   norm_num
 
+/-! ### A legal degree-three obstruction to the universal six-factor shortcut -/
+
+noncomputable def sixFactorObstructionGuesses : Fin 4 → TenElevenSecret :=
+  fun t => fiveFactorObstructionGuesses t.castSucc
+
+def sixFactorObstructionEdges : Fin 4 → Fin 10 × Fin 11 :=
+  fun t => fiveFactorObstructionEdges t.castSucc
+
+@[simp] theorem complete_sixFactorObstructionGuess (t : Fin 4) :
+    completeTenElevenSecret (sixFactorObstructionGuesses t) =
+      fiveFactorObstructionPermutations t.castSucc := by
+  exact complete_fiveFactorObstructionGuess t.castSucc
+
+theorem sixFactorObstruction_color_four_iff (row : Fin 11) :
+    completedFourPathAllowed sixFactorObstructionGuesses
+      sixFactorObstructionEdges row 4 ↔
+        row = 2 ∨ row = 8 ∨ row = Fin.last 10 := by
+  simp only [completedFourPathAllowed, complete_sixFactorObstructionGuess]
+  fin_cases row <;>
+    norm_num [sixFactorObstructionEdges, fiveFactorObstructionEdges,
+      fiveFactorObstructionPermutations, fiveFactorObstructionPermutation₀,
+      fiveFactorObstructionPermutation₁, fiveFactorObstructionPermutation₂,
+      fiveFactorObstructionPermutation₃, Fin.forall_fin_succ] <;>
+    decide
+
+theorem sixFactorObstruction_color_degree_three :
+    bipartiteEdgeCount
+      (completedFourPathAllowed sixFactorObstructionGuesses
+        sixFactorObstructionEdges) Finset.univ {4} = 3 := by
+  simp only [bipartiteEdgeCount, Finset.sum_singleton]
+  simp_rw [sixFactorObstruction_color_four_iff]
+  decide
+
+theorem completedFiveObstruction_sub_completedFourObstruction :
+    IsSubrelation
+      (completedFivePathAllowed fiveFactorObstructionGuesses
+        fiveFactorObstructionEdges)
+      (completedFourPathAllowed sixFactorObstructionGuesses
+        sixFactorObstructionEdges) := by
+  intro row color allowed
+  constructor
+  · intro t
+    exact allowed.1 t.castSucc
+  · intro t equalRow
+    exact allowed.2 t.castSucc equalRow
+
+/-- The degree-three four-path obstruction is nevertheless a nonempty state. -/
+theorem sixFactorObstruction_survivors_nonempty :
+    (FourZeroFalseVectorFinset sixFactorObstructionGuesses
+      sixFactorObstructionEdges).Nonempty := by
+  have matchingMem : fiveFactorObstructionSurvivor ∈
+      PerfectMatchingFinset
+        (completedFourPathAllowed sixFactorObstructionGuesses
+          sixFactorObstructionEdges) :=
+    perfectMatchingFinset_mono
+      completedFiveObstruction_sub_completedFourObstruction
+      fiveFactorObstructionSurvivor_mem
+  let matching :
+      ↥(PerfectMatchingFinset
+        (completedFourPathAllowed sixFactorObstructionGuesses
+          sixFactorObstructionEdges)) :=
+    ⟨fiveFactorObstructionSurvivor, matchingMem⟩
+  exact ⟨(restrictCompletedFourPathMatching _ _ matching).1,
+    (restrictCompletedFourPathMatching _ _ matching).2⟩
+
+/-- Four legal checks can destroy every six-factor by concentrating on one color. -/
+theorem sixFactorObstruction_no_sixRegular :
+    ¬HasSixFactor
+      (completedFourPathAllowed sixFactorObstructionGuesses
+        sixFactorObstructionEdges) := by
+  apply no_regular_subrelation_of_color_degree_lt 6 _ 4
+  rw [sixFactorObstruction_color_degree_three]
+  norm_num
+
 /-! ## Six-regular defect-cut reduction -/
 
 theorem bipartiteEdgeCount_univ_right
@@ -637,6 +769,27 @@ theorem sixRegular_cut_lower {allowed : Fin 11 → Fin 11 → Prop}
   rw [colorTotal, colorCard] at outsideMono
   omega
 
+/-- Every cut in a seven-regular eleven-by-eleven graph contains at least `7s` edges. -/
+theorem sevenRegular_cut_lower {allowed : Fin 11 → Fin 11 → Prop}
+    (regular : IsSpanningRegular 7 allowed)
+    (rows colors : Finset (Fin 11)) :
+    7 * (rows.card + colors.card - 11) ≤
+      bipartiteEdgeCount allowed rows colors := by
+  classical
+  have rowTotal := bipartiteEdgeCount_univ_right allowed 7 regular.1 rows
+  have partition := bipartiteEdgeCount_partition_right allowed rows colors
+  have outsideMono := bipartiteEdgeCount_mono_rows allowed
+    (colors := Finset.univ \ colors) (Finset.subset_univ rows)
+  have colorTotal := bipartiteEdgeCount_univ_left allowed 7 regular.2
+    (Finset.univ \ colors)
+  have colorCard : (Finset.univ \ colors).card = 11 - colors.card := by
+    rw [Finset.card_sdiff_of_subset (Finset.subset_univ colors)]
+    simp
+  have rowsLe : rows.card ≤ 11 := by simpa using rows.card_le_univ
+  have colorsLe : colors.card ≤ 11 := by simpa using colors.card_le_univ
+  rw [colorTotal, colorCard] at outsideMono
+  omega
+
 /-- The necessary cut inequality inside any five-regular spanning relation. -/
 theorem fiveRegular_cut_lower {allowed : Fin 11 → Fin 11 → Prop}
     (regular : IsSpanningRegular 5 allowed)
@@ -702,6 +855,20 @@ def FiveFactorCutCondition (allowed : Fin 11 → Fin 11 → Prop) : Prop :=
     5 * (rows.card + colors.card - 11) ≤
       bipartiteEdgeCount allowed rows colors
 
+/-- The fixed-size six-factor cut inequality on eleven vertices per side. -/
+def SixFactorCutCondition (allowed : Fin 11 → Fin 11 → Prop) : Prop :=
+  ∀ rows colors : Finset (Fin 11),
+    6 * (rows.card + colors.card - 11) ≤
+      bipartiteEdgeCount allowed rows colors
+
+/-- Every six-factor satisfies the fixed-size bipartite cut inequality. -/
+theorem HasSixFactor.cutCondition {allowed : Fin 11 → Fin 11 → Prop}
+    (factor : HasSixFactor allowed) : SixFactorCutCondition allowed := by
+  obtain ⟨regular, sixRegular, contained⟩ := factor
+  intro rows colors
+  exact (sixRegular_cut_lower sixRegular rows colors).trans
+    (bipartiteEdgeCount_mono_relation contained rows colors)
+
 /-- Every five-factor satisfies the fixed-size bipartite cut inequality. -/
 theorem HasFiveFactor.cutCondition {allowed : Fin 11 → Fin 11 → Prop}
     (factor : HasFiveFactor allowed) : FiveFactorCutCondition allowed := by
@@ -741,6 +908,57 @@ theorem sixRegular_fiveFactorCut_defect
     omega
   · dsimp [s] at baseLower violates ⊢
     omega
+
+/--
+Failure of the six-factor cut inequality after at most four deletions from a
+seven-regular graph has a defect witness with excess in `{1,2,3}`.
+-/
+theorem sevenRegular_sixFactorCut_defect
+    (allowed deleted : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed)
+    (deletedAllowed : IsSubrelation deleted allowed)
+    (atMostFour :
+      bipartiteEdgeCount deleted Finset.univ Finset.univ ≤ 4)
+    (failure : ¬SixFactorCutCondition
+      (deleteBipartiteEdges allowed deleted)) :
+    ∃ (rows colors : Finset (Fin 11)) (s : Nat),
+      s = rows.card + colors.card - 11 ∧
+      1 ≤ s ∧ s ≤ 3 ∧
+      s + 1 ≤ bipartiteEdgeCount deleted rows colors := by
+  classical
+  rw [SixFactorCutCondition] at failure
+  push Not at failure
+  obtain ⟨rows, colors, violates⟩ := failure
+  let s := rows.card + colors.card - 11
+  have baseLower := sevenRegular_cut_lower regular rows colors
+  have split := bipartiteEdgeCount_delete_add allowed deleted deletedAllowed rows colors
+  have deletedLe := (bipartiteEdgeCount_mono_rectangle deleted rows colors).trans atMostFour
+  refine ⟨rows, colors, s, rfl, ?_, ?_, ?_⟩
+  · dsimp [s]
+    omega
+  · dsimp [s]
+    omega
+  · dsimp [s] at baseLower violates ⊢
+    omega
+
+/-- The preceding defect follows from six-factor nonexistence once cut sufficiency is supplied. -/
+theorem sevenRegular_no_sixFactor_defect_of_cut_sufficient
+    (allowed deleted : Fin 11 → Fin 11 → Prop)
+    (regular : IsSpanningRegular 7 allowed)
+    (deletedAllowed : IsSubrelation deleted allowed)
+    (atMostFour :
+      bipartiteEdgeCount deleted Finset.univ Finset.univ ≤ 4)
+    (cutSufficient : SixFactorCutCondition
+      (deleteBipartiteEdges allowed deleted) →
+        HasSixFactor (deleteBipartiteEdges allowed deleted))
+    (noFactor : ¬HasSixFactor (deleteBipartiteEdges allowed deleted)) :
+    ∃ (rows colors : Finset (Fin 11)) (s : Nat),
+      s = rows.card + colors.card - 11 ∧
+      1 ≤ s ∧ s ≤ 3 ∧
+      s + 1 ≤ bipartiteEdgeCount deleted rows colors := by
+  apply sevenRegular_sixFactorCut_defect allowed deleted regular deletedAllowed atMostFour
+  intro cutCondition
+  exact noFactor (cutSufficient cutCondition)
 
 /--
 The defect conclusion from actual nonexistence of a five-factor, conditional

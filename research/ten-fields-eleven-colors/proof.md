@@ -225,6 +225,66 @@ Thus its four-round prefix clears (4) by more than a factor of two. This exact
 DP computation is useful evidence for the denser four-fiber route, but it is
 one state rather than a proof of the universal inequality (4).
 
+#### Six-factors and the four-path exceptional cuts
+
+A tempting regular-subgraph shortcut is not valid globally. In the favorable
+edge-disjoint case, the complement of the four completed query permutations
+is seven-regular before the checked edges are removed. Every six-factor of the
+remaining graph would satisfy
+
+```text
+e_H(X,Y) >= 6 * (|X| + |Y| - 11).                      (F6)
+```
+
+The standard permanent inequality would force 276,640 perfect matchings from
+a seven-factor, comfortably above 92,206. Lean checks this integer arithmetic
+and the injection into the real survivor state, while retaining the permanent
+inequality as an explicit premise because it is absent from Mathlib. A mere
+six-factor would force only 50,758 matchings by the same inequality, so even
+that valid subgraph would not alone close (4). The relevant Lean results are
+`permanent_six_regular_threshold`,
+`permanent_seven_regular_threshold`, and
+`card_fourZeroFalseVector_large_of_sevenRegular`.
+
+Lean proves the exact defect arithmetic around this criterion. If `G` is
+seven-regular, at most four allowed checked edges are deleted, and the result
+violates (F6), put `s = |X| + |Y| - 11` for a violating cut. The base graph has
+at least `7s` edges in the cut. Strict violation after deletion therefore
+places at least `s+1` of the four deleted edges in the cut, forcing
+
+```text
+s in {1,2,3}.
+```
+
+As in the five-factor analysis below, the theorem deriving this conclusion
+from actual *nonexistence* of a six-factor keeps the sufficient direction of
+the bipartite factor criterion as an explicit argument. It is not silently
+assumed. Overlapping completed queries also need not provide a seven-regular
+base, so this is a structural reduction for the regular case, not a universal
+path theorem.
+
+The exceptional behavior is genuine. Lean checks four legal completed queries
+and four legal false checks for which color 4 has exactly three allowed rows.
+Consequently the graph has no six-regular spanning subrelation. An explicit
+perfect matching also survives, so the obstruction is a consistent nonempty
+four-zero/four-false state rather than an impossible transcript. This example
+is the first four rounds of the degree-one five-path witness below: the four
+checks concentrate on color 4, while the four completed permutations already
+exclude four other rows from that color.
+
+The subset-DP audit script counts 189,874 perfect matchings in this completed
+four-round obstruction, still more than twice the required 92,206. That number
+is reproducible evidence, not a kernel theorem or a universal minimum; the
+kernel checks only the structural degree-three obstruction and a surviving
+matching.
+
+Thus a proof of (4) must count perfect matchings through the `s = 1,2,3`
+exceptional cuts (and handle query overlaps), rather than assume a universal
+six-factor. The Lean results are
+`sevenRegular_sixFactorCut_defect`,
+`sixFactorObstruction_color_degree_three`, and
+`sixFactorObstruction_no_sixRegular`.
+
 ### Five zero/false responses: a checked reduction toward nine
 
 There is a more promising state-dependent route that does not collapse the
@@ -1117,11 +1177,12 @@ uses match-set injections rather than enumerating secrets.
 
 For the lower bound, Lean now also checks the high-response fiber refinements,
 the three-round capacity `6370`, and the reduction of a nine-round lower bound
-to the five-zero/false intersection inequality (5). The new perfect-matching
-file additionally checks completion/restriction, injection into the survivor
-state, five-factor necessity, permanent-threshold arithmetic, the
-six-regular defect reduction, and the explicit degree-one obstruction. It
-does not prove the universal inequality (5).
+to both the four-zero/false intersection inequality (4) and the five-zero/false
+intersection inequality (5). The perfect-matching file additionally checks
+completion/restriction, injection into both survivor states, five- and
+six-factor necessity, permanent-threshold arithmetic, the six- and
+seven-regular defect reductions, and explicit degree-one and degree-three
+obstructions. It does not prove either universal survivor inequality.
 
 For the upper-bound audit, Lean checks the published 44-round arithmetic and
 the arithmetic of the shorter allocations. More importantly,

@@ -59,7 +59,12 @@ inequalities.
 For the five-round route the project formalizes the safe perfect-matching
 bridge, the necessary five-factor cut inequality, the six-regular small-defect
 reduction, and an explicit degree-one obstruction showing that a five-factor
-cannot simply be assumed. The corresponding Lean lemmas are in
+cannot simply be assumed. For the denser four-round route it now also proves
+the analogous seven-regular/six-factor defect arithmetic: after at most four
+deletions, a violated six-factor cut has excess only `1`, `2`, or `3`. A
+kernel-checked nonempty four-query/four-check example has one color of degree
+three, proving that a universal six-factor shortcut is false and that the
+exceptional cuts must be counted directly. The corresponding Lean lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean)
 and
 [`BlackPegExtraCheck/FiveZeroBridge.lean`](BlackPegExtraCheck/FiveZeroBridge.lean);
