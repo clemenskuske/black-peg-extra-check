@@ -71,7 +71,36 @@ This route is attractive because it improves the already formalized phase
 rather than demanding a stronger separator.  It must explicitly reconstruct
 the residual cylindrical profile; knowing only its total size is insufficient.
 
-### 3. Import the nine-rook all-fiber verifier into Lean
+### 3. Import the eight-rook and nine-rook all-fiber verifiers into Lean
+
+`verify_eight_rook_sep3.cpp` now independently reproduces the corrected
+compatible-affine eight-rook Sep 3 search:
+
+```text
+eight-element supports: 165
+raw support pairs: 27225
+compatible affine group size: 1210
+canonical support-pair orbits: 25
+orbit completeness: ok
+sharp fiber regression size: 86
+normalized support pairs: 25
+fibers checked: 92360
+total fiber memberships: 1008000
+maximum fiber size: 86
+maximum fiber support P={0,1,2,3,4,5,6,7} C={0,1,2,3,4,6,7,9} D={0,1,2,4,6,7,8,9}
+sharp fiber covered by canonical orbit: yes
+fibers of size >= 4: 72185
+not solved in three rounds: 0
+```
+
+The support-pair normalization is only by
+
+```text
+p |-> a*p+s,   c |-> a*c+t       (a != 0 mod 11)
+```
+
+with one common multiplier.  Independent position/color multipliers are
+invalid because they do not preserve `c-p` as a relabeled displacement.
 
 `verify_nine_rook_sep4.cpp` now independently reproduces the normalized
 nine-rook Sep 4 search:

@@ -831,6 +831,51 @@ table exported by `export_sharp_eight_rook_lean.py` is checked by Lean in
 exact adaptive quantifier order. It does not cover every cylindrical fiber and
 therefore does not prove the universal lemma.
 
+The reconstructed all-fiber verifier
+`research/ten-fields-eleven-colors/verify_eight_rook_sep3.cpp` uses the
+compatible cylindrical affine action
+
+```text
+p |-> a*p+s,   c |-> a*c+t       (a != 0 mod 11)
+```
+
+with one common multiplier and independent translations.  It deliberately
+does not normalize positions and colors with independent multipliers, since
+that would not relabel `c-p` as a displacement.  The verifier enumerates all
+`C(11,8)^2 = 27225` raw support pairs, proves their compatible orbits are
+covered by 25 canonical support pairs, groups each canonical pair's `8!`
+bijections by exact displacement histogram, and runs the legal
+query-then-black-then-edge predicate with both Boolean children.  Its checked
+output is:
+
+```text
+eight-element supports: 165
+raw support pairs: 27225
+compatible affine group size: 1210
+canonical support-pair orbits: 25
+orbit completeness: ok
+sharp fiber regression size: 86
+normalized support pairs: 25
+fibers checked: 92360
+total fiber memberships: 1008000
+maximum fiber size: 86
+maximum fiber support P={0,1,2,3,4,5,6,7} C={0,1,2,3,4,6,7,9} D={0,1,2,4,6,7,8,9}
+sharp fiber covered by canonical orbit: yes
+fibers of size >= 4: 72185
+not solved in three rounds: 0
+```
+
+This corrects the earlier incomplete normalization whose maximum was 84, and
+it explicitly recovers the Lean-checked sharp 86-candidate fiber.  It is still
+an external verifier until the normalization theorem and certificate DAGs are
+checked by the Lean kernel.
+
+The source SHA-256 is
+
+```text
+0a8e5ee060387fe63095098d2fa00981ba599577e4b9f51fc35a354904d35995
+```
+
 After the cyclic setup, one accelerated search takes two rounds and fixes one
 new coordinate. Together with the setup coordinate, two positions are known
 and eight remain. Apply the eight-rook lemma:
