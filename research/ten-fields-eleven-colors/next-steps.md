@@ -89,6 +89,8 @@ total fiber memberships: 1008000
 maximum fiber size: 86
 maximum fiber support P={0,1,2,3,4,5,6,7} C={0,1,2,3,4,6,7,9} D={0,1,2,4,6,7,8,9}
 sharp fiber covered by canonical orbit: yes
+chosen separator DAG nonterminal nodes: 388117
+maximum chosen separator DAG nonterminal nodes: 30 for fiber size 76
 fibers of size >= 4: 72185
 not solved in three rounds: 0
 ```

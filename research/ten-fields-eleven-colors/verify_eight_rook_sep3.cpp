@@ -30,6 +30,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -341,12 +342,18 @@ SharpRegression verify_sharp_regression() {
 }
 
 struct FiberVerifier {
+  struct Choice {
+    bool solvable = false;
+    int query = -1;
+    std::array<int, R + 1> edge{};
+  };
+
   Support positions;
   Support colors;
   std::vector<Support> candidates;
   std::vector<std::array<Mask, R + 1>> black_masks;
   std::vector<Mask> edge_masks;
-  std::unordered_map<std::string, bool> memo;
+  std::unordered_map<std::string, Choice> memo;
 
   explicit FiberVerifier(Support p, Support c, std::vector<Support> rows)
       : positions(p), colors(c), candidates(std::move(rows)) {
@@ -374,19 +381,24 @@ struct FiberVerifier {
     }
   }
 
-  bool one_round(const Mask& state) {
+  Choice one_round(const Mask& state) {
     for (std::size_t q = 0; q < candidates.size(); ++q) {
       if (!state.get(static_cast<int>(q))) continue;
+      Choice choice;
+      choice.solvable = true;
+      choice.query = static_cast<int>(q);
       bool query_good = true;
       for (int b = 0; b <= R; ++b) {
         Mask black = intersect_mask(state, black_masks[q][b]);
         if (black.empty()) continue;
         bool edge_good = false;
-        for (const Mask& edge : edge_masks) {
-          Mask yes = intersect_mask(black, edge);
-          Mask no = subtract_mask(black, edge);
+        for (std::size_t edge_index = 0; edge_index < edge_masks.size();
+             ++edge_index) {
+          Mask yes = intersect_mask(black, edge_masks[edge_index]);
+          Mask no = subtract_mask(black, edge_masks[edge_index]);
           if (yes.count() <= 1 && no.count() <= 1) {
             edge_good = true;
+            choice.edge[b] = static_cast<int>(edge_index);
             break;
           }
         }
@@ -395,9 +407,9 @@ struct FiberVerifier {
           break;
         }
       }
-      if (query_good) return true;
+      if (query_good) return choice;
     }
-    return false;
+    return {};
   }
 
   Mask full_mask() const {
@@ -412,24 +424,30 @@ struct FiberVerifier {
     if (state_size <= 1) return true;
     if (depth == 0) return false;
     const std::string key = state.key(depth);
-    if (auto found = memo.find(key); found != memo.end()) return found->second;
+    if (auto found = memo.find(key); found != memo.end())
+      return found->second.solvable;
 
     if (depth == 1) {
-      return memo.emplace(key, one_round(state)).first->second;
+      return memo.emplace(key, one_round(state)).first->second.solvable;
     }
 
     for (std::size_t q = 0; q < candidates.size(); ++q) {
       if (!state.get(static_cast<int>(q))) continue;
+      Choice choice;
+      choice.solvable = true;
+      choice.query = static_cast<int>(q);
       bool query_good = true;
       for (int b = 0; b <= R; ++b) {
         Mask black = intersect_mask(state, black_masks[q][b]);
         if (black.empty()) continue;
         bool edge_good = false;
-        for (const Mask& edge : edge_masks) {
-          Mask yes = intersect_mask(black, edge);
-          Mask no = subtract_mask(black, edge);
+        for (std::size_t edge_index = 0; edge_index < edge_masks.size();
+             ++edge_index) {
+          Mask yes = intersect_mask(black, edge_masks[edge_index]);
+          Mask no = subtract_mask(black, edge_masks[edge_index]);
           if (sep(depth - 1, yes) && sep(depth - 1, no)) {
             edge_good = true;
+            choice.edge[b] = static_cast<int>(edge_index);
             break;
           }
         }
@@ -438,9 +456,34 @@ struct FiberVerifier {
           break;
         }
       }
-      if (query_good) return memo.emplace(key, true).first->second;
+      if (query_good) return memo.emplace(key, choice).first->second.solvable;
     }
-    return memo.emplace(key, false).first->second;
+    return memo.emplace(key, Choice{}).first->second.solvable;
+  }
+
+  std::uint64_t reachable_nonterminal_nodes(
+      int depth, const Mask& state, std::unordered_set<std::string>& seen) const {
+    if (state.count() <= 1 || depth == 0) return 0;
+    const std::string key = state.key(depth);
+    if (!seen.insert(key).second) return 0;
+    const auto found = memo.find(key);
+    if (found == memo.end() || !found->second.solvable ||
+        found->second.query < 0) {
+      fail("solved state is missing a deterministic witness choice");
+    }
+
+    std::uint64_t total = 1;
+    const Choice& choice = found->second;
+    for (int b = 0; b <= R; ++b) {
+      const Mask black =
+          intersect_mask(state, black_masks[static_cast<std::size_t>(choice.query)][b]);
+      const Mask& edge = edge_masks[static_cast<std::size_t>(choice.edge[b])];
+      total += reachable_nonterminal_nodes(depth - 1,
+          intersect_mask(black, edge), seen);
+      total += reachable_nonterminal_nodes(depth - 1,
+          subtract_mask(black, edge), seen);
+    }
+    return total;
   }
 };
 
@@ -457,9 +500,12 @@ int main() {
   std::uint64_t total_memberships = 0;
   std::uint64_t large_fibers = 0;
   std::uint64_t unsolved = 0;
+  std::uint64_t total_witness_nodes = 0;
+  std::uint64_t max_witness_nodes = 0;
   std::size_t max_fiber = 0;
   SupportPair max_pair{};
   Hist max_hist{};
+  std::size_t max_witness_fiber = 0;
   bool sharp_canonical_fiber_seen = false;
 
   std::cout << "eight-element supports: " << supports.size() << '\n';
@@ -491,11 +537,12 @@ int main() {
         }
         sharp_canonical_fiber_seen = true;
       }
-        if (rows.size() >= 4) ++large_fibers;
+      if (rows.size() >= 4) ++large_fibers;
 
       if (rows.size() > 1) {
         FiberVerifier verifier(pair.first, pair.second, std::move(rows));
-        if (!verifier.sep(3, verifier.full_mask())) {
+        Mask full = verifier.full_mask();
+        if (!verifier.sep(3, full)) {
           ++unsolved;
           std::cerr << "unsolved fiber of size "
                     << verifier.candidates.size() << " at P="
@@ -503,6 +550,14 @@ int main() {
                     << support_string(pair.second) << " D="
                     << hist_string(decode_hist_key(key)) << '\n';
           return EXIT_FAILURE;
+        }
+        std::unordered_set<std::string> seen;
+        const std::uint64_t witness_nodes =
+            verifier.reachable_nonterminal_nodes(3, full, seen);
+        total_witness_nodes += witness_nodes;
+        if (witness_nodes > max_witness_nodes) {
+          max_witness_nodes = witness_nodes;
+          max_witness_fiber = verifier.candidates.size();
         }
       }
     }
@@ -532,6 +587,11 @@ int main() {
             << " C=" << support_string(max_pair.second)
             << " D=" << hist_string(max_hist) << '\n';
   std::cout << "sharp fiber covered by canonical orbit: yes\n";
+  std::cout << "chosen separator DAG nonterminal nodes: "
+            << total_witness_nodes << '\n';
+  std::cout << "maximum chosen separator DAG nonterminal nodes: "
+            << max_witness_nodes << " for fiber size "
+            << max_witness_fiber << '\n';
   std::cout << "fibers of size >= 4: " << large_fibers << '\n';
   std::cout << "not solved in three rounds: " << unsolved << '\n';
   std::cout << "elapsed seconds: " << seconds << '\n';

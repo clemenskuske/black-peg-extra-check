@@ -861,6 +861,8 @@ total fiber memberships: 1008000
 maximum fiber size: 86
 maximum fiber support P={0,1,2,3,4,5,6,7} C={0,1,2,3,4,6,7,9} D={0,1,2,4,6,7,8,9}
 sharp fiber covered by canonical orbit: yes
+chosen separator DAG nonterminal nodes: 388117
+maximum chosen separator DAG nonterminal nodes: 30 for fiber size 76
 fibers of size >= 4: 72185
 not solved in three rounds: 0
 ```
@@ -882,7 +884,7 @@ fibers.
 The source SHA-256 is
 
 ```text
-0a8e5ee060387fe63095098d2fa00981ba599577e4b9f51fc35a354904d35995
+2283584d4f6889628c8f4d2edf8915000abfd831682d90669c2d4fefea7e5c91
 ```
 
 After the cyclic setup, one accelerated search takes two rounds and fixes one
