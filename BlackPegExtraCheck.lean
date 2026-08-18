@@ -4,4 +4,5 @@ import BlackPegExtraCheck.FiveZeroBridge
 import BlackPegExtraCheck.Separator
 import BlackPegExtraCheck.SeparatorTransport
 import BlackPegExtraCheck.CyclicStrategy
+import BlackPegExtraCheck.CylindricalNormalization
 import BlackPegExtraCheck.SharpEightRookCertificate

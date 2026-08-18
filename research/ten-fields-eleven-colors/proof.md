@@ -870,6 +870,15 @@ it explicitly recovers the Lean-checked sharp 86-candidate fiber.  It is still
 an external verifier until the normalization theorem and certificate DAGs are
 checked by the Lean kernel.
 
+Lean now checks the compatible affine algebra in
+`BlackPegExtraCheck/CylindricalNormalization.lean`: affine maps over `ZMod 11`
+are equivalences, the displacement identity is
+`(a*c+t) - (a*p+s) = a*(c-p) + (t-s)`, and displacement classes over a finite
+support have the same cardinality after relabeling.  This is the normalization
+algebra needed by the external verifier, but it is not yet the equality theorem
+from concrete `CylindricalFiber` states to enumerated canonical residual
+fibers.
+
 The source SHA-256 is
 
 ```text

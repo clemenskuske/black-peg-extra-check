@@ -101,6 +101,12 @@ p |-> a*p+s,   c |-> a*c+t       (a != 0 mod 11)
 
 with one common multiplier.  Independent position/color multipliers are
 invalid because they do not preserve `c-p` as a relabeled displacement.
+`BlackPegExtraCheck/CylindricalNormalization.lean` now kernel-checks this
+compatible affine algebra over `ZMod 11`, including the theorem that
+displacement classes over a finite support are carried bijectively to the
+relabeled displacement classes.  The open bridge is to identify each concrete
+`CylindricalFiber anchor fixed` with one of the enumerated abstract residual
+fibers; separator transport is sound only after that equality is proved.
 
 `verify_nine_rook_sep4.cpp` now independently reproduces the normalized
 nine-rook Sep 4 search:
