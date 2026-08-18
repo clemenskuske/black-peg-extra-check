@@ -8,7 +8,8 @@ for bipartite matchings.  The DP has only ``11 * 2^11`` states.
 
 The output supplies two discovery/audit facts:
 
-* the actual ten-row survivor state has 10,404 secrets; and
+* its four-round prefix has 199,926 surviving secrets;
+* the full ten-row survivor state has 10,404 secrets; and
 * completing the five queries produces the same number of perfect matchings,
   while checked color 4 has degree one in the completed graph.
 
@@ -147,15 +148,23 @@ def main() -> None:
     completed = completed_queries()
     ten_row = forbidden_rows(complete=False)
     eleven_row = forbidden_rows(complete=True)
+    prefix_counts = tuple(
+        matching_count(
+            forbidden_rows_for(completed[:rounds], CHECKS[:rounds], complete=False)
+        )
+        for rounds in range(1, 6)
+    )
     ten_count = matching_count(ten_row)
     completed_count = matching_count(eleven_row)
     degree_four = completed_color_degree(4)
 
+    assert prefix_counts == (14_402_745, 4_495_168, 1_136_548, 199_926, 10_404)
     assert ten_count == 10_404
     assert completed_count == 10_404
     assert degree_four == 1
 
     print("omitted query colors:", [query[-1] for query in completed])
+    print("ten-row zero/false prefix counts:", list(prefix_counts))
     print("ten-row survivor count:", ten_count)
     print("completed perfect-matchings:", completed_count)
     print("completed degree of checked color 4:", degree_four)

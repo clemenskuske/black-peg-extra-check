@@ -185,6 +185,38 @@ state-dependent adversary or a structural restriction on intersections of
 successive black fibers; another one-dimensional capacity recurrence cannot
 do it.  No nine-round lower bound is claimed here.
 
+### Four zero/false responses: a higher-margin reduction
+
+The refined short-horizon recurrence also gives
+
+```text
+S_4 = 92,206.
+```
+
+This value still permits an arbitrary Boolean predicate after each legal black
+answer, so it is a sound capacity bound for the real coordinate-equality game.
+Follow the all-zero/all-false path for four rounds of an alleged eight-round
+strategy, and call its survivor set `Z_4`. If
+
+```text
+|Z_4| > 92,206,                                                   (4)
+```
+
+for every four-query path, the remaining four rounds cannot solve `Z_4`.
+The Lean theorem `tenElevenLowerBoundNine_of_fourZeroFalse_large` kernel-checks
+this reduction from an arbitrary legal tree; it does not assume the desired
+lower bound.
+
+The explicit degree-one obstruction used below has zero/false prefix counts
+
+```text
+14,402,745; 4,495,168; 1,136,548; 199,926; 10,404.
+```
+
+Thus its four-round prefix clears (4) by more than a factor of two. This exact
+DP computation is useful evidence for the denser four-fiber route, but it is
+one state rather than a proof of the universal inequality (4).
+
 ### Five zero/false responses: a checked reduction toward nine
 
 There is a more promising state-dependent route that does not collapse the

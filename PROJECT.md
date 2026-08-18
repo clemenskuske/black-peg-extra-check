@@ -49,11 +49,14 @@ imported into Lean. Therefore the repository still does not claim an
 unconditional `T+(10,11) <= 14` theorem.
 
 For the lower-bound direction, the audit also gives a kernel-checked reduction
-of a possible ninth-round lower bound to a five-fiber intersection inequality.
-It formalizes the safe perfect-matching bridge, the necessary five-factor cut
-inequality, the six-regular small-defect reduction, and an explicit degree-one
-obstruction showing that a five-factor cannot simply be assumed. The
-corresponding Lean lemmas are in
+of a possible ninth-round lower bound to either of two concrete intersection
+inequalities: more than 92,206 survivors after four zero/false rounds, or more
+than 6,370 after five. The explicit obstruction below has prefix counts 199,926
+and 10,404, respectively, but those computations are not universal proofs.
+For the five-round route the project formalizes the safe perfect-matching
+bridge, the necessary five-factor cut inequality, the six-regular small-defect
+reduction, and an explicit degree-one obstruction showing that a five-factor
+cannot simply be assumed. The corresponding Lean lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean)
 and
 [`BlackPegExtraCheck/FiveZeroBridge.lean`](BlackPegExtraCheck/FiveZeroBridge.lean);

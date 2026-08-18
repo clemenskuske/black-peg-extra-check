@@ -871,6 +871,10 @@ def tenElevenShortCapacity : Nat → Nat
     tenElevenShortCapacity 3 = 6370 := by
   decide
 
+@[simp] theorem tenElevenShortCapacity_four :
+    tenElevenShortCapacity 4 = 92206 := by
+  decide
+
 theorem TenElevenRelaxedStrategy.card_le_shortCapacity {rounds : Nat}
     (tree : TenElevenRelaxedStrategy rounds) (candidates : Finset TenElevenSecret)
     (solves : tree.Solves candidates) :
@@ -916,6 +920,15 @@ theorem no_three_round_continuation_of_large
   intro solves
   have upper := tree.card_le_shortCapacity candidates solves
   rw [tenElevenShortCapacity_three] at upper
+  omega
+
+/-- No relaxed four-round continuation can distinguish 92,207 candidates. -/
+theorem no_four_round_continuation_of_large
+    (tree : TenElevenRelaxedStrategy 4) (candidates : Finset TenElevenSecret)
+    (large : 92206 < candidates.card) : ¬ tree.Solves candidates := by
+  intro solves
+  have upper := tree.card_le_shortCapacity candidates solves
+  rw [tenElevenShortCapacity_four] at upper
   omega
 
 noncomputable def ZeroFalseFinset (guess : TenElevenSecret) (i : Fin 10)
@@ -1053,6 +1066,17 @@ noncomputable def FiveZeroFalseFinset
       guess₃ edge₃)
     guess₄ edge₄
 
+/-- The survivors of four consecutive zero-black/false-check responses. -/
+noncomputable def FourZeroFalseFinset
+    (guess₀ guess₁ guess₂ guess₃ : TenElevenSecret)
+    (edge₀ edge₁ edge₂ edge₃ : Fin 10 × Fin 11) : Finset TenElevenSecret :=
+  zeroFalseStep
+    (zeroFalseStep
+      (zeroFalseStep
+        (zeroFalseStep Finset.univ guess₀ edge₀) guess₁ edge₁)
+      guess₂ edge₂)
+    guess₃ edge₃
+
 /--
 Conditional adversary reduction for the open ninth round.  It does not assume
 the desired conclusion: its sole hypothesis is the concrete intersection
@@ -1102,6 +1126,49 @@ theorem tenElevenLowerBoundNine_of_fiveZeroFalse_large
                         TenElevenRelaxedStrategy.blackBranch,
                         tree₁, tree₂, tree₃, tree₄]
                         using solves₅
+
+/--
+A second conditional adversary reduction for the ninth round.  Four consecutive
+zero/false answers leave four rounds.  The sole hypothesis is the concrete
+four-query intersection bound above the kernel-checked relaxed capacity 92,206.
+-/
+theorem tenElevenLowerBoundNine_of_fourZeroFalse_large
+    (fourZeroFalseLarge :
+      ∀ (guess₀ guess₁ guess₂ guess₃ : TenElevenSecret)
+        (edge₀ edge₁ edge₂ edge₃ : Fin 10 × Fin 11),
+        92206 < (FourZeroFalseFinset guess₀ guess₁ guess₂ guess₃
+          edge₀ edge₁ edge₂ edge₃).card)
+    (tree : TenElevenStrategy 8) (solves : tree.Solves Finset.univ) : False := by
+  cases tree with
+  | node guess₀ check₀ next₀ =>
+      have solves₁ := solves (0 : Fin 11) false
+      cases tree₁ : next₀ 0 false with
+      | node guess₁ check₁ next₁ =>
+          change (next₀ 0 false).toRelaxed.Solves _ at solves₁
+          rw [tree₁] at solves₁
+          have solves₂ := solves₁ (0 : Fin 11) false
+          cases tree₂ : next₁ 0 false with
+          | node guess₂ check₂ next₂ =>
+              change (next₁ 0 false).toRelaxed.Solves _ at solves₂
+              rw [tree₂] at solves₂
+              have solves₃ := solves₂ (0 : Fin 11) false
+              cases tree₃ : next₂ 0 false with
+              | node guess₃ check₃ next₃ =>
+                  change (next₂ 0 false).toRelaxed.Solves _ at solves₃
+                  rw [tree₃] at solves₃
+                  have solves₄ := solves₃ (0 : Fin 11) false
+                  have large := fourZeroFalseLarge guess₀ guess₁ guess₂ guess₃
+                    (check₀ 0) (check₁ 0) (check₂ 0) (check₃ 0)
+                  apply no_four_round_continuation_of_large
+                    ((next₃ 0 false).toRelaxed)
+                    (FourZeroFalseFinset guess₀ guess₁ guess₂ guess₃
+                      (check₀ 0) (check₁ 0) (check₂ 0) (check₃ 0))
+                    large
+                  simpa [FourZeroFalseFinset, zeroFalseStep,
+                    TenElevenRelaxedStrategy.answerBranch,
+                    TenElevenRelaxedStrategy.blackBranch,
+                    tree₁, tree₂, tree₃]
+                    using solves₄
 
 /--
 The numerical value of the published classical AB-Mastermind construction at
