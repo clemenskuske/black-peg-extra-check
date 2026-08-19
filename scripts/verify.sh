@@ -8,6 +8,9 @@ lake env lean BlackPegExtraCheck/DecisionTree.lean
 lake env lean BlackPegExtraCheck/TenFieldsElevenColors.lean
 lake env lean BlackPegExtraCheck/FiveZeroBridge.lean
 lake env lean BlackPegExtraCheck/ExactFiberCapacity.lean
+lake env lean BlackPegExtraCheck/AggregateFourPathBridge.lean
+lake env lean BlackPegExtraCheck/RegularMarginalStructure.lean
+lake env lean BlackPegExtraCheck/RegularCompletionObstruction.lean
 lake env lean BlackPegExtraCheck/Separator.lean
 lake env lean BlackPegExtraCheck/SeparatorTransport.lean
 lake env lean BlackPegExtraCheck/CyclicStrategy.lean

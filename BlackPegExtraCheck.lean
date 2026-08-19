@@ -2,6 +2,9 @@ import BlackPegExtraCheck.DecisionTree
 import BlackPegExtraCheck.TenFieldsElevenColors
 import BlackPegExtraCheck.FiveZeroBridge
 import BlackPegExtraCheck.ExactFiberCapacity
+import BlackPegExtraCheck.AggregateFourPathBridge
+import BlackPegExtraCheck.RegularMarginalStructure
+import BlackPegExtraCheck.RegularCompletionObstruction
 import BlackPegExtraCheck.Separator
 import BlackPegExtraCheck.SeparatorTransport
 import BlackPegExtraCheck.CyclicStrategy

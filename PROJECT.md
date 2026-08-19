@@ -74,15 +74,31 @@ sixth of them; the resulting arithmetic clears 89,036. The one-sixth marginal
 is now known to be false for the full completed-query class with overlaps: an
 exact block-structured four-query example has 1,968,535 query-only matchings,
 458,761 of which use one allowed edge. The corresponding seven-regular,
-edge-disjoint marginal inequality remains open; completing overlapping query
-supports to a regular forbidden supergraph and proving a direct aggregate
-four-edge inequality are the clean remaining routes. The corresponding Lean
+edge-disjoint marginal inequality remains open. A second exact obstruction
+shows that the overlap support cannot always be enlarged to a simple
+four-regular forbidden graph on the same vertices: four legal query factors
+can have support `K_3,3` disjoint from an already saturated four-regular
+eight-vertex block. Thus the remaining route must prove a direct aggregate
+four-edge inequality, or handle precisely these deficient overlap components
+rather than invoking a blanket regular completion. The exact aggregate target
+is now kernel-checked: query matchings partition into path survivors and the
+union of the four checked-edge events. Hence the weakest remaining condition
+is `89036 + |loss union| < |query matchings|`. With the proposed query lower
+bound 276,640, the convenient still-sufficient relaxation is
+`3|loss union| <= 2|query matchings| + 9529`, allowing 3,176 more losses at the
+minimum than the old two-thirds bound. The corresponding Lean
 lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean)
 and
 [`BlackPegExtraCheck/FiveZeroBridge.lean`](BlackPegExtraCheck/FiveZeroBridge.lean);
 the exact capacity theorem is in
 [`BlackPegExtraCheck/ExactFiberCapacity.lean`](BlackPegExtraCheck/ExactFiberCapacity.lean);
+the exact aggregate reduction is in
+[`BlackPegExtraCheck/AggregateFourPathBridge.lean`](BlackPegExtraCheck/AggregateFourPathBridge.lean);
+the all-four-cycle injection with reverse multiplicity one is in
+[`BlackPegExtraCheck/RegularMarginalStructure.lean`](BlackPegExtraCheck/RegularMarginalStructure.lean);
+the regular-completion obstruction is in
+[`BlackPegExtraCheck/RegularCompletionObstruction.lean`](BlackPegExtraCheck/RegularCompletionObstruction.lean);
 the cyclic composition is in
 [`BlackPegExtraCheck/CyclicStrategy.lean`](BlackPegExtraCheck/CyclicStrategy.lean).
 
