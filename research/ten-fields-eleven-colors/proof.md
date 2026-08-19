@@ -190,30 +190,36 @@ do it.  No nine-round lower bound is claimed here.
 The refined short-horizon recurrence also gives
 
 ```text
-S_4 = 92,206.
+S_4 = 89,036.
 ```
 
-This value still permits an arbitrary Boolean predicate after each legal black
-answer, so it is a sound capacity bound for the real coordinate-equality game.
+This is now a kernel theorem, not only an external inclusion-exclusion
+calculation. Completing the secret and query to permutations splits an exact
+match set according to whether the omitted eleventh row is fixed. The two
+pieces inject into derangements on `10-b` and `11-b` points, proving the exact
+fiber cap `choose(10,b) * (D(10-b) + D(11-b))`. The resulting recurrence still
+permits an arbitrary Boolean predicate after each legal black answer, so it is
+a sound capacity bound for the real coordinate-equality game.
 Follow the all-zero/all-false path for four rounds of an alleged eight-round
 strategy, and call its survivor set `Z_4`. If
 
 ```text
-|Z_4| > 92,206,                                                   (4)
+|Z_4| > 89,036,                                                   (4)
 ```
 
 for every four-query path, the remaining four rounds cannot solve `Z_4`.
-The Lean theorem `tenElevenLowerBoundNine_of_fourZeroFalse_large` kernel-checks
-this reduction from an arbitrary legal tree; it does not assume the desired
+The Lean theorem
+`tenElevenLowerBoundNine_of_fourZeroFalse_derangement_large` kernel-checks this
+sharper reduction from an arbitrary legal tree; it does not assume the desired
 lower bound.
 
 There is also a safe graph-theoretic bridge. Complete each of the four query
 injections to its unique permutation of eleven colors. Restricting a perfect
 matching of the completed avoidance graph back to ten rows is injective, so a
-universal completed permanent greater than 92,206 suffices. Lean checks the
+universal completed permanent greater than 89,036 suffices. Lean checks the
 injection in `card_completedFourPathPerfectMatchings_le_fourZeroFalse` and the
 full game-tree implication in
-`tenElevenLowerBoundNine_of_completedFourPermanent_large`.
+`tenElevenLowerBoundNine_of_completedFourPermanent_derangement_large`.
 
 The explicit degree-one obstruction used below has zero/false prefix counts
 
@@ -237,7 +243,7 @@ e_H(X,Y) >= 6 * (|X| + |Y| - 11).                      (F6)
 ```
 
 The standard permanent inequality would force 276,640 perfect matchings from
-a seven-factor, comfortably above 92,206. Lean checks this integer arithmetic
+a seven-factor, comfortably above 89,036. Lean checks this integer arithmetic
 and the injection into the real survivor state, while retaining the permanent
 inequality as an explicit premise because it is absent from Mathlib. A mere
 six-factor would force only 50,758 matchings by the same inequality, so even
@@ -273,7 +279,7 @@ checks concentrate on color 4, while the four completed permutations already
 exclude four other rows from that color.
 
 The subset-DP audit script counts 189,874 perfect matchings in this completed
-four-round obstruction, still more than twice the required 92,206. That number
+four-round obstruction, still more than twice the required 89,036. That number
 is reproducible evidence, not a kernel theorem or a universal minimum; the
 kernel checks only the structural degree-three obstruction and a surviving
 matching.
@@ -302,8 +308,8 @@ Consequently the two inequalities
 ```
 
 would imply that at least one third of `P` survives. Since
-`276,640 / 3 > 92,206`, this closes (4), with a margin of seven matchings.
-Lean checks the exact finite-set union argument and arithmetic in
+`276,640 / 3 > 89,036`, this closes (4) with substantially more room. Lean
+checks the exact finite-set union argument and arithmetic in
 `card_completedFourPath_large_of_queryLarge_and_edgeMarginals`, and the full
 strategy-tree implication in
 `tenElevenLowerBoundNine_of_queryLarge_and_edgeMarginals`; the regular
@@ -357,10 +363,34 @@ the crude two-layer count, not the one-sixth conjecture. A successful
 switching proof must use longer cycles or exploit the exact reverse
 multiplicities instead of replacing all of them by the worst-case value six.
 
-This route presently covers the edge-disjoint query base. Overlapping query
-permutations require either a monotone compression to that case or a separate
-query-only permanent/marginal argument. Thus the exact remaining tasks are a
-proof of the one-sixth switching inequality and a sound overlap reduction.
+The one-sixth statement is false for the full completed-query class when query
+permutations overlap. The exact audit `overlap_marginal_counterexample.py`
+gives four legal completed queries whose forbidden matrix, after permuting rows
+and colors, is
+
+```text
+(J_5 - I_5) direct_sum I_6.
+```
+
+For the allowed edge `(0,0)` it counts
+
+```text
+P = 1,968,535,  C = 458,761,  6*C - P = 784,031 > 0.
+```
+
+The script verifies the block form directly, evaluates a transparent six-term
+count obtained by conditioning on the number of `I_5` edges, and independently
+checks both totals by a `2^11` subset DP. Thus this is a counterexample to the
+universal marginal claim in the exact game-derived class, not merely in a
+generic dense graph. It is not a counterexample in the seven-regular
+edge-disjoint subclass: extended annealing there still found a largest sampled
+ratio about `0.1472`, below `1/6`, without proving the conjecture.
+
+A successful universal proof must therefore either complete every overlapping
+query support to a four-regular forbidden supergraph and prove the aggregate
+four-check bound in the resulting seven-regular subgraph, or count the four
+checked-edge union directly. An individual marginal inequality on the original
+overlapping graph cannot close the argument.
 
 ### Five zero/false responses: a checked reduction toward nine
 

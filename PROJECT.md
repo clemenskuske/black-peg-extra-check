@@ -50,8 +50,11 @@ unconditional `T+(10,11) <= 14` theorem.
 
 For the lower-bound direction, the audit also gives a kernel-checked reduction
 of a possible ninth-round lower bound to either of two concrete intersection
-inequalities: more than 92,206 survivors after four zero/false rounds, or more
-than 6,370 after five. The explicit obstruction below has prefix counts 199,926
+inequalities: more than 89,036 survivors after four zero/false rounds, or more
+than 6,370 after five. The sharper four-round threshold now follows from a
+kernel-checked derangement decomposition giving every exact black fiber its
+true cap `choose(10,b) * (D(10-b) + D(11-b))`; the older factorial cap gave
+92,206. The explicit obstruction below has prefix counts 199,926
 and 10,404, respectively, but those computations are not universal proofs.
 Both routes now have kernel-checked injections from completed-path perfect
 matchings into the real survivor states, reducing them to clean permanent
@@ -67,11 +70,19 @@ three, proving that a universal six-factor shortcut is false and that the
 exceptional cuts must be counted directly. A second kernel-checked reduction
 shows that the four-path permanent follows if the query-only graph has at
 least 276,640 perfect matchings and each checked edge occurs in at most one
-sixth of them; the resulting arithmetic clears 92,206 by seven. The edge-
-marginal inequality itself remains open. The corresponding Lean lemmas are in
+sixth of them; the resulting arithmetic clears 89,036. The one-sixth marginal
+is now known to be false for the full completed-query class with overlaps: an
+exact block-structured four-query example has 1,968,535 query-only matchings,
+458,761 of which use one allowed edge. The corresponding seven-regular,
+edge-disjoint marginal inequality remains open; completing overlapping query
+supports to a regular forbidden supergraph and proving a direct aggregate
+four-edge inequality are the clean remaining routes. The corresponding Lean
+lemmas are in
 [`BlackPegExtraCheck/TenFieldsElevenColors.lean`](BlackPegExtraCheck/TenFieldsElevenColors.lean)
 and
 [`BlackPegExtraCheck/FiveZeroBridge.lean`](BlackPegExtraCheck/FiveZeroBridge.lean);
+the exact capacity theorem is in
+[`BlackPegExtraCheck/ExactFiberCapacity.lean`](BlackPegExtraCheck/ExactFiberCapacity.lean);
 the cyclic composition is in
 [`BlackPegExtraCheck/CyclicStrategy.lean`](BlackPegExtraCheck/CyclicStrategy.lean).
 
