@@ -10,6 +10,7 @@ lake env lean BlackPegExtraCheck/FiveZeroBridge.lean
 lake env lean BlackPegExtraCheck/ExactFiberCapacity.lean
 lake env lean BlackPegExtraCheck/AggregateFourPathBridge.lean
 lake env lean BlackPegExtraCheck/RegularMarginalStructure.lean
+lake env lean BlackPegExtraCheck/RegularQueryClass.lean
 lake env lean BlackPegExtraCheck/RegularCompletionObstruction.lean
 lake env lean BlackPegExtraCheck/Separator.lean
 lake env lean BlackPegExtraCheck/SeparatorTransport.lean

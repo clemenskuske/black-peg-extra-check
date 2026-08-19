@@ -374,6 +374,17 @@ incidences versus `5*C = 268,020`, so four-cycles alone provably cannot deliver
 the desired factor five.  The still-missing regular-class argument must obtain
 the deficit from longer alternating cycles with tighter reverse accounting.
 
+There is no smaller game-specific subclass hidden inside the remaining
+edge-disjoint case.  `sevenRegular_eq_completedFourQueriesAllowed` proves in
+Lean that every simple seven-regular relation on the eleven rows and colors is
+the query-only avoidance graph of four legal edge-disjoint completed queries.
+The proof applies Hall's theorem to a positive regular relation, proves that
+deleting the resulting permutation lowers both degrees by one, and iterates
+this to factor the four-regular complement into four permutations.  Therefore
+the sampled absence of a counterexample below `1/6` concerns the exact full
+finite class, while a proof must genuinely establish the extremal statement
+for all such regular graphs.
+
 The one-sixth statement is false for the full completed-query class when query
 permutations overlap. The exact audit `overlap_marginal_counterexample.py`
 gives four legal completed queries whose forbidden matrix, after permuting rows

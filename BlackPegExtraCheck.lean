@@ -4,6 +4,7 @@ import BlackPegExtraCheck.FiveZeroBridge
 import BlackPegExtraCheck.ExactFiberCapacity
 import BlackPegExtraCheck.AggregateFourPathBridge
 import BlackPegExtraCheck.RegularMarginalStructure
+import BlackPegExtraCheck.RegularQueryClass
 import BlackPegExtraCheck.RegularCompletionObstruction
 import BlackPegExtraCheck.Separator
 import BlackPegExtraCheck.SeparatorTransport

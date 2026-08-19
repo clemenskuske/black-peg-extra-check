@@ -97,6 +97,9 @@ the exact aggregate reduction is in
 [`BlackPegExtraCheck/AggregateFourPathBridge.lean`](BlackPegExtraCheck/AggregateFourPathBridge.lean);
 the all-four-cycle injection with reverse multiplicity one is in
 [`BlackPegExtraCheck/RegularMarginalStructure.lean`](BlackPegExtraCheck/RegularMarginalStructure.lean);
+the Hall factorization proving that the edge-disjoint query class is exactly
+the full class of simple seven-regular bipartite graphs is in
+[`BlackPegExtraCheck/RegularQueryClass.lean`](BlackPegExtraCheck/RegularQueryClass.lean);
 the regular-completion obstruction is in
 [`BlackPegExtraCheck/RegularCompletionObstruction.lean`](BlackPegExtraCheck/RegularCompletionObstruction.lean);
 the cyclic composition is in
