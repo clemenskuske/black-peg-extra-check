@@ -6,3 +6,4 @@ import BlackPegExtraCheck.SeparatorTransport
 import BlackPegExtraCheck.CyclicStrategy
 import BlackPegExtraCheck.CylindricalNormalization
 import BlackPegExtraCheck.SharpEightRookCertificate
+import BlackPegExtraCheck.FirstAnswerHighFibers
