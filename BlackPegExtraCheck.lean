@@ -8,3 +8,4 @@ import BlackPegExtraCheck.CylindricalNormalization
 import BlackPegExtraCheck.SharpEightRookCertificate
 import BlackPegExtraCheck.FirstAnswerHighFibers
 import BlackPegExtraCheck.FirstAnswerFourFiber
+import BlackPegExtraCheck.FirstAnswerZeroFiber
